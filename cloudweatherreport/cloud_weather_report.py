@@ -2,11 +2,12 @@ from __future__ import print_function
 
 import argparse
 import os
-from StringIO import StringIO
+from cStringIO import StringIO
 
-from bundletester import (
-    tester,
-)
+from bundletester import tester
+from cloudweatherreport.juju_client import JujuClient
+from cloudweatherreport.reporter import Reporter
+from utils import read_file
 
 
 def bundle_tester_args(parser):
@@ -44,25 +45,47 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('controller', nargs='+', help="Controller list.")
     parser.add_argument('test_plan', help="Test plan YAML file.")
-    parser.add_argument('--result-output', help="Test result output file.")
-    bundle_tester_args(parser)
-    args = parser.parse_args(argv)
-    return args
+    parser.add_argument('--result-output', help="Test result output file.",
+                        default='result.html')
+    parser = bundle_tester_args(parser)
+    return parser.parse_args(argv)
 
 
-def run_bundle_test(args, env):
+def run_bundle_test(args, env, test_plan=None):
     test_result = StringIO()
     args.output = test_result
-    args.tests = None
+    args.tests = test_plan.get('tests') if test_plan else None
     args.environment = env
     args.reporter = 'json'
+    args.testdir = test_plan.get('bundle') if test_plan else args.testdir
     tester.main(args)
     return test_result.getvalue()
 
 
+def run_actions(test_plan, juju_client):
+    action_result = []
+    for unit, actions in test_plan['benchmark'].items():
+        actions = [actions] if isinstance(actions, str) else actions
+        for action in actions:
+            result = juju_client.action_do_fetch(
+                unit, action, '5m', "--format", "yaml")
+            action_result.append(result)
+    return action_result
+
+
 def main(args):
+    test_plan = None
+    if args.test_plan:
+        test_plan = read_file(args.test_plan, 'yaml')
+    test_results = None
+    action_results = None
     for env in args.controller:
-        run_bundle_test(args, env)
+        test_results = run_bundle_test(args=args, env=env, test_plan=test_plan)
+        if test_plan.get('benchmark'):
+            juju_client = JujuClient(env_name=env)
+            action_results = run_actions(test_plan, juju_client)
+    reporter = Reporter(args, test_results, action_results)
+    reporter.generate_html(args.result_output)
 
 
 if __name__ == '__main__':

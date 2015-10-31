@@ -1,0 +1,7 @@
+bundle: cs:git
+tests:
+benchmark:
+  git/0:
+    - list-repos
+    - list-users
+
