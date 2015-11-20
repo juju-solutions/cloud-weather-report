@@ -14,7 +14,7 @@ import yaml
 from cloudweatherreport import cloud_weather_report
 
 
-class TestRunner(TestCase):
+class TestCloudWeatherReport(TestCase):
 
     def test_parse_args_defaults(self):
         args = cloud_weather_report.parse_args(['aws', 'test_plan'])
@@ -44,7 +44,7 @@ class TestRunner(TestCase):
 
     def test_run_bundle_test(self):
         io_output = StringIO()
-        test_plan = self.make_test_plan()
+        test_plan = self.make_tst_plan()
         args = Namespace()
         with patch(
                 'cloudweatherreport.cloud_weather_report.StringIO',
@@ -78,13 +78,10 @@ class TestRunner(TestCase):
         mock_tm.assert_called_once_with(call)
         mock_ntf.assert_called_once_with()
 
-    def fake_tester_main(self, args):
-        args.output.write('test passed')
-
     def test_main(self):
         with NamedTemporaryFile() as output:
             with NamedTemporaryFile() as test_plan_file:
-                test_plan = self.make_test_plan_file(test_plan_file.name)
+                test_plan = self.make_tst_plan_file(test_plan_file.name)
                 args = Namespace(controller=['aws'],
                                  result_output=output.name,
                                  test_plan=test_plan_file.name,
@@ -100,7 +97,7 @@ class TestRunner(TestCase):
 
     def test_main_multi_clouds(self):
         with NamedTemporaryFile() as test_plan_file:
-            test_plan = self.make_test_plan_file(test_plan_file.name)
+            test_plan = self.make_tst_plan_file(test_plan_file.name)
             args = Namespace(controller=['aws', 'gce'],
                              result_output="result.html",
                              test_plan=test_plan_file.name,
@@ -112,17 +109,6 @@ class TestRunner(TestCase):
         calls = [call(args=args, env='aws', test_plan=test_plan),
                  call(args=args, env='gce', test_plan=test_plan)]
         self.assertEqual(mock_rbt.mock_calls, calls)
-
-    def make_test_plan_file(self, filename):
-        test_plan = {'tests': ['test1', 'test2'], 'bundle': 'bundle-url'}
-        content = yaml.dump(test_plan)
-        with open(filename, 'w') as yaml_file:
-            yaml_file.write(content)
-        return yaml.load(content)
-
-    def make_test_plan(self):
-        test_plan = {'tests': ['test1', 'test2'], 'bundle': 'bundle-url'}
-        return test_plan
 
     def test_run_actions(self):
         content = """
@@ -136,14 +122,28 @@ class TestRunner(TestCase):
                 unit_2: action
             """
         test_plan = yaml.load(content)
-        mock_juju_client = MagicMock()
-        mock_juju_client.action_do_fetch.side_effect = [3, 2, 1]
-        result = cloud_weather_report.run_actions(test_plan, mock_juju_client)
-        calls = [call('unit_1', 'action1', '5m', '--format', 'yaml'),
-                 call('unit_1', 'action2', '5m', '--format', 'yaml'),
-                 call('unit_2', 'action', '5m', '--format', 'yaml')]
-        self.assertEqual(mock_juju_client.action_do_fetch.mock_calls, calls)
+        mock_client = MagicMock()
+        with patch('cloudweatherreport.cloud_weather_report.run_action',
+                   autospec=True, side_effect=[3, 2, 1]) as mock_cr:
+            result = cloud_weather_report.run_actions(test_plan, mock_client)
+        calls = [call(mock_client, 'unit_1', 'action1'),
+                 call(mock_client, 'unit_1', 'action2'),
+                 call(mock_client, 'unit_2', 'action')]
+        self.assertEqual(mock_cr.mock_calls, calls)
         self.assertEqual(result, [3, 2, 1])
+
+    def fake_tester_main(self, args):
+        args.output.write('test passed')
+
+    def make_tst_plan_file(self, filename):
+        test_plan = self.make_tst_plan()
+        content = yaml.dump(test_plan)
+        with open(filename, 'w') as yaml_file:
+            yaml_file.write(content)
+        return yaml.load(content)
+
+    def make_tst_plan(self):
+        return {'tests': ['test1', 'test2'], 'bundle': 'bundle-url'}
 
     def get_html_code(self):
         return ('<!DOCTYPE html>\n<html lang="en">\n<head>\n    '

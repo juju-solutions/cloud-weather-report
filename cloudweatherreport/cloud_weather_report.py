@@ -1,13 +1,16 @@
 from __future__ import print_function
 
 import argparse
-import os
 from cStringIO import StringIO
+import os
 
 from bundletester import tester
-from cloudweatherreport.juju_client import JujuClient
 from cloudweatherreport.reporter import Reporter
-from utils import read_file
+import jujuclient
+from utils import (
+    read_file,
+    run_action,
+)
 
 
 def bundle_tester_args(parser):
@@ -62,15 +65,14 @@ def run_bundle_test(args, env, test_plan=None):
     return test_result.getvalue()
 
 
-def run_actions(test_plan, juju_client):
-    action_result = []
+def run_actions(test_plan, client):
+    action_results = []
     for unit, actions in test_plan['benchmark'].items():
         actions = [actions] if isinstance(actions, str) else actions
         for action in actions:
-            result = juju_client.action_do_fetch(
-                unit, action, '5m', "--format", "yaml")
-            action_result.append(result)
-    return action_result
+            result = run_action(client, unit, action)
+            action_results.append(result)
+    return action_results
 
 
 def main(args):
@@ -82,8 +84,9 @@ def main(args):
     for env in args.controller:
         test_results = run_bundle_test(args=args, env=env, test_plan=test_plan)
         if test_plan.get('benchmark'):
-            juju_client = JujuClient(env_name=env)
-            action_results = run_actions(test_plan, juju_client)
+            env = jujuclient.Environment.connect(env_name=env)
+            client = jujuclient.Actions(env)
+            action_results = run_actions(test_plan, client)
     reporter = Reporter(args, test_results, action_results)
     reporter.generate_html(args.result_output)
 
