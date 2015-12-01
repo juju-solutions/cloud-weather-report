@@ -1,4 +1,9 @@
-from tempfile import NamedTemporaryFile
+import os
+from shutil import rmtree
+from tempfile import (
+    NamedTemporaryFile,
+    mkdtemp,
+)
 from unittest import TestCase
 
 import yaml
@@ -6,6 +11,7 @@ import yaml
 from cloudweatherreport.utils import (
     read_file,
     run_action,
+    mkdir_p,
     wait_for_action_complete,
 )
 
@@ -60,6 +66,13 @@ class TestUtil(TestCase):
         with self.assertRaisesRegexp(ValueError, 'id not found'):
             wait_for_action_complete(
                 fake_client, pending_action['results'][0]['action']['tag'])
+
+    def test_mkdir_p(self):
+        d = mkdtemp()
+        path = os.path.join(d, 'a/b/c')
+        mkdir_p(path)
+        self.assertTrue(os.path.isdir(path))
+        rmtree(d)
 
 
 class FakeActionClient:

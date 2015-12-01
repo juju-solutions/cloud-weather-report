@@ -2,6 +2,8 @@ from datetime import (
     datetime,
     timedelta,
 )
+import errno
+import os
 from time import sleep
 import yaml
 
@@ -32,3 +34,13 @@ def wait_for_action_complete(action, tag, timeout=300, pause_time=.1):
             return result
         sleep(pause_time)
     raise Exception('Timed out waiting for action to complete.')
+
+
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as e:
+        if e.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise

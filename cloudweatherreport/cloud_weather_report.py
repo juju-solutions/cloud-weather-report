@@ -1,13 +1,16 @@
 from __future__ import print_function
 
 import argparse
+import ast
 from cStringIO import StringIO
+from datetime import datetime
 import os
 
 from bundletester import tester
 from cloudweatherreport.reporter import Reporter
 import jujuclient
 from utils import (
+    mkdir_p,
     read_file,
     run_action,
 )
@@ -75,22 +78,40 @@ def run_actions(test_plan, client):
     return action_results
 
 
+def get_filenames(bundle):
+    now = datetime.now().replace(microsecond=0).isoformat()
+    html_filename = "{}-{}-result.html".format(bundle, now)
+    json_filename = "{}-{}-result.json".format(bundle, now)
+    result_dir = 'results'
+    mkdir_p(result_dir)
+    html_filename = os.path.join(result_dir, html_filename)
+    json_filename = os.path.join(result_dir, json_filename)
+    return html_filename, json_filename
+
+
 def main(args):
     test_plan = None
     if args.test_plan:
         test_plan = read_file(args.test_plan, 'yaml')
-    test_results = None
-    action_results = None
-    for env in args.controller:
-        test_results = run_bundle_test(args=args, env=env, test_plan=test_plan)
+    results = []
+    for env_name in args.controller:
+        test_results = run_bundle_test(args=args, env=env_name,
+                                       test_plan=test_plan)
         if test_plan.get('benchmark'):
-            env = jujuclient.Environment.connect(env_name=env)
+            env = jujuclient.Environment.connect(env_name=env_name)
             client = jujuclient.Actions(env)
             action_results = run_actions(test_plan, client)
-    reporter = Reporter(args, test_results, action_results)
-    reporter.generate_html(args.result_output)
+            results.append({"env_name": env_name,
+                            "test_results": ast.literal_eval(test_results),
+                            "action_results": action_results})
+    bundle = test_plan.get('bundle')
+    html_filename, json_filename = get_filenames(bundle)
+    reporter = Reporter(bundle=bundle, results=results, options=args)
+    reporter.generate(html_filename=html_filename, json_filename=json_filename)
+    return html_filename
 
 
 if __name__ == '__main__':
     args = parse_args()
-    main(args)
+    html_filename = main(args)
+    print("Test result:\n  {}".format(html_filename))

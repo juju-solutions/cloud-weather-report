@@ -2,9 +2,62 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{title}}</title>
+    <title>{{ title }}</title>
+        <link rel="stylesheet" type="text/css" media="screen" href="//assets.ubuntu.com/sites/guidelines/css/responsive/latest/ubuntu-styles.css">
+    <link rel="stylesheet" type="text/css" href="../static/css/base.css">
 </head>
-<body>
+<body class="details-page">
 
+<div class="container">
+
+    <header class="banner global" role="banner">
+        <nav role="navigation" class="nav-primary nav-right">
+        <div class="logo">
+          <h2><a href="/">Cloud Weather Report</a></h2>
+        </div>
+      </nav>
+    </header>
+
+    <div class="wrapper">
+        <div id="main-content">
+
+            <div class="row dotted-border">
+                <h2>{{ charm_name }}</h2>
+            </div>
+
+            <div class="row">
+                <div class="twelve-col">
+                    <div class="inner-wrapper">
+                        <div class="four-col no-margin-bottom dotted-right-border">
+                            {{ relation }}
+                        </div>
+                        <div class="eight-col last-col no-margin-bottom">
+                             <table>
+                                 <tr>
+                                     <td class="thead">Test Name</td>
+                                     <td class="thead">Duration</td>
+                                     <td class="thead">Result</td>
+                                 </tr>
+                                {% for result in results['results'] %}
+                                    <tr>
+                                        <td colspan="3" class="thead">{{ result["cloud"] }}</td>
+                                    </tr>
+                                  {% for test in result['tests'] %}
+                                      <tr>
+                                          <td> {{ test["name"] }}</td>
+                                          <td> {{ test["duration"] }}</td>
+                                          <td> {{ test["result"] }}</td>
+                                      </tr>
+                                  {% endfor %}
+                                {% endfor %}
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
 </body>
 </html>
