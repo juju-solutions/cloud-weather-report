@@ -9,6 +9,9 @@
 .title{
     color: #fff;
 }
-.thead{
+.rhead {
     background-color: inherit;
+}
+.result{
+    background-color: #fff;
 }

@@ -44,3 +44,15 @@ def mkdir_p(path):
             pass
         else:
             raise
+
+
+def get_provider_name(provider_type):
+    name = {'azure': 'Azure', 'cloudsigma': 'CloudSigma',
+            'ec2': 'Amazon Web Services', 'gce': 'Google Compute Engine',
+            'joyent': 'Joyent', 'local': 'Local', 'maas': 'MAAS',
+            'openstack': 'OpenStack', 'vsphere': 'vSphere',
+            }
+    try:
+        return name[provider_type]
+    except KeyError:
+        return provider_type

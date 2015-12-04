@@ -1,8 +1,12 @@
 from argparse import Namespace
 import json
 import os
+from shutil import rmtree
 from StringIO import StringIO
-from tempfile import NamedTemporaryFile
+from tempfile import (
+    NamedTemporaryFile,
+    mkdtemp,
+)
 from unittest import TestCase
 
 from mock import (
@@ -80,6 +84,12 @@ class TestCloudWeatherReport(TestCase):
         mock_ntf.assert_called_once_with()
 
     def test_main(self):
+        run_bundle_test_p = patch(
+            'cloudweatherreport.cloud_weather_report.run_bundle_test',
+            autospec=True, return_value=self.make_results())
+        juju_client_p = patch(
+            'cloudweatherreport.cloud_weather_report.jujuclient',
+            autospec=True)
         with NamedTemporaryFile() as html_output:
             with NamedTemporaryFile() as json_output:
                 with NamedTemporaryFile() as test_plan_file:
@@ -88,25 +98,33 @@ class TestCloudWeatherReport(TestCase):
                                      result_output=html_output.name,
                                      test_plan=test_plan_file.name,
                                      testdir='git')
-                    with patch('cloudweatherreport.cloud_weather_report.'
-                               'run_bundle_test',
-                               autospec=True) as mock_rbt:
-                        with patch('cloudweatherreport.cloud_weather_report.'
-                                   'get_filenames',
-                                   autospec=True,
-                                   return_value=(html_output.name,
-                                                 json_output.name)
-                                   ) as mock_gf:
-                            cloud_weather_report.main(args)
+                    get_filenames_p = patch(
+                        'cloudweatherreport.cloud_weather_report.'
+                        'get_filenames', autospec=True, return_value=(
+                            html_output.name, json_output.name))
+                    with run_bundle_test_p as mock_rbt:
+                        with get_filenames_p as mock_gf:
+                            with juju_client_p as mock_jc:
+                                (mock_jc.Environment.connect.return_value.
+                                 info.return_value) = {"ProviderType": "ec2"}
+                                cloud_weather_report.main(args)
                 html_content = html_output.read()
                 json_content = json.loads(json_output.read())
             self.assertRegexpMatches(html_content, '<title>git</title>')
             self.assertEqual(json_content["bundle"]["name"], 'git')
+            self.assertEqual(json_content["results"][0]["provider_name"],
+                             'Amazon Web Services')
         mock_rbt.assert_called_once_with(args=args, env='aws',
                                          test_plan=test_plan)
         mock_gf.assert_called_once_with('git')
 
     def test_main_multi_clouds(self):
+        run_bundle_test_p = patch(
+            'cloudweatherreport.cloud_weather_report.run_bundle_test',
+            autospec=True, return_value=self.make_results())
+        juju_client_p = patch(
+            'cloudweatherreport.cloud_weather_report.jujuclient',
+            autospec=True)
         with NamedTemporaryFile() as test_plan_file:
             with NamedTemporaryFile() as html_output:
                 with NamedTemporaryFile() as json_output:
@@ -115,16 +133,16 @@ class TestCloudWeatherReport(TestCase):
                                      result_output="result.html",
                                      test_plan=test_plan_file.name,
                                      testdir=None)
-                    with patch('cloudweatherreport.cloud_weather_report.'
-                               'run_bundle_test',
-                               autospec=True) as mock_rbt:
-                        with patch('cloudweatherreport.cloud_weather_report.'
-                                   'get_filenames',
-                                   autospec=True,
-                                   return_value=(html_output.name,
-                                                 json_output.name)
-                                   ) as mock_gf:
-                            cloud_weather_report.main(args)
+                    get_filenames_p = patch(
+                        'cloudweatherreport.cloud_weather_report.'
+                        'get_filenames', autospec=True, return_value=(
+                            html_output.name, json_output.name))
+                    with run_bundle_test_p as mock_rbt:
+                        with get_filenames_p as mock_gf:
+                            with juju_client_p as mock_jc:
+                                (mock_jc.Environment.connect.return_value.
+                                 info.return_value) = {"ProviderType": "ec2"}
+                                cloud_weather_report.main(args)
                     json_content = json.loads(json_output.read())
         calls = [call(args=args, env='aws', test_plan=test_plan),
                  call(args=args, env='gce', test_plan=test_plan)]
@@ -154,6 +172,16 @@ class TestCloudWeatherReport(TestCase):
         self.assertEqual(mock_cr.mock_calls, calls)
         self.assertEqual(result, [3, 2, 1])
 
+    def test_get_filenames(self):
+        tempdir = mkdtemp()
+        with patch('cloudweatherreport.cloud_weather_report.run_action'):
+            h_file, j_file = cloud_weather_report.get_filenames('git')
+        rmtree(tempdir)
+        self.assertTrue(h_file.startswith('results/git-') and
+                        h_file.endswith('.html'))
+        self.assertTrue(j_file.startswith('results/git-') and
+                        j_file.endswith('.json'))
+
     def fake_tester_main(self, args):
         args.output.write('test passed')
 
@@ -166,3 +194,25 @@ class TestCloudWeatherReport(TestCase):
 
     def make_tst_plan(self):
         return {'tests': ['test1', 'test2'], 'bundle': 'git'}
+
+    def make_results(self):
+        return """{
+                    'tests': [
+                        {'returncode': 0,
+                         'test': 'charm-proof',
+                         'output': 'foo',
+                         'duration': 1.55,
+                         'suite': 'git',
+                         },
+                        {'returncode': 0,
+                         'test': '00-setup',
+                         'output': 'foo',
+                         'duration': 2.55,
+                         'suite': 'git'},
+                        {'returncode': 1,
+                         'test': '10-actions',
+                         'duration': 3.55,
+                         'suite': 'git',
+                         }
+                    ],
+            }"""

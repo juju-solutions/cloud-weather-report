@@ -3,19 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <title>{{ title }}</title>
-        <link rel="stylesheet" type="text/css" media="screen" href="//assets.ubuntu.com/sites/guidelines/css/responsive/latest/ubuntu-styles.css">
+    <link rel="stylesheet" type="text/css" media="screen" href="../static/css/ubuntu-styles.css">
     <link rel="stylesheet" type="text/css" href="../static/css/base.css">
+    <script type='text/javascript' src='../static/js/jquery.min.js'></script>
+    <script type="text/javascript">
+        function hide_rows(name) {
+            name = '.' + name;
+            $(name).hide();
+            return false;
+        }
+        function toggle_rows(name) {
+            name = '.' + name;
+            $(name).toggle();
+            return false;
+        }
+    </script>
 </head>
+{% macro display_status_img(value) -%}
+    {% if value == 'PASS' or value == 'All Passed' %}
+        <img src="../static/images/success.svg" width="30px" />
+    {% elif value == 'FAIL' or value == 'All Failed' %}
+        <img src="../static/images/error.svg"  width="30px"/>
+    {% elif value == 'Some Failed' %}
+        <img src="../static/images/pending.svg" width="30px"/>
+    {% else %}
+        {{ value }}
+    {% endif %}
+{%- endmacro %}
 <body class="details-page">
-
 <div class="container">
 
     <header class="banner global" role="banner">
         <nav role="navigation" class="nav-primary nav-right">
-        <div class="logo">
-          <h2><a href="/">Cloud Weather Report</a></h2>
-        </div>
-      </nav>
+            <div class="logo">
+                <h2><a href="/">Cloud Weather Report</a></h2>
+            </div>
+        </nav>
     </header>
 
     <div class="wrapper">
@@ -29,35 +52,98 @@
                 <div class="twelve-col">
                     <div class="inner-wrapper">
                         <div class="four-col no-margin-bottom dotted-right-border">
-                            {{ relation }}
+                            <!-- relation goes here -->
+                        </div>
+                        <h3>Current test result</h3>
+                        <div>
+                            {{ results["date"]|humanize_date }}
                         </div>
                         <div class="eight-col last-col no-margin-bottom">
-                             <table>
-                                 <tr>
-                                     <td class="thead">Test Name</td>
-                                     <td class="thead">Duration</td>
-                                     <td class="thead">Result</td>
-                                 </tr>
+                            <table style="table-layout:fixed">
+                                <col width="40px"/>
+                                <col width="30px"/>
+                                <col width="20px"/>
                                 {% for result in results['results'] %}
-                                    <tr>
-                                        <td colspan="3" class="thead">{{ result["cloud"] }}</td>
+                                    {% set rowloop = loop %}
+                                    <tr onclick="toggle_rows('t{{ rowloop.index }}');" class="result">
+                                        <td colspan="2" class="rhead">
+                                            <a href="javascript:;">{{ result["provider_name"] }}</a>
+                                        </td>
+                                        <td class="rhead">
+                                            <a href="javascript:;">
+                                                {{  display_status_img(result.get("test_outcome")) }}
+                                            </a>
+                                        </td>
                                     </tr>
-                                  {% for test in result['tests'] %}
-                                      <tr>
-                                          <td> {{ test["name"] }}</td>
-                                          <td> {{ test["duration"] }}</td>
-                                          <td> {{ test["result"] }}</td>
-                                      </tr>
-                                  {% endfor %}
+                                    {% for test in result['tests'] %}
+                                        <tr class="t{{ rowloop.index }}">
+                                            <td class="result"> {{ test["name"] }}</td>
+                                            <td class="result"> {{ test["duration"] }}</td>
+                                            <td class="result">
+                                                {{ display_status_img(test["result"]) }}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+
+                                    <script type="text/javascript">
+                                        hide_rows('t{{ rowloop.index }}');
+                                    </script>
+
                                 {% endfor %}
+
                             </table>
                         </div>
                     </div>
                 </div>
+
+                <div class="eight-col last-col no-margin-bottom">
+                    <div class="inner-wrapper">
+                        <h3>Past test results:</h3>
+                        <table style="table-layout: fixed;">
+                            <col width="40px"/>
+                            <col width="30px"/>
+                            <col width="20px"/>
+                            {% for past_result in past_results %}
+                                {% set rootloop = loop %}
+                                {% for past_test in past_result["results"] %}
+                                    {% set rowloop = loop %}
+                                    <tr class="result" onclick="toggle_rows('tt{{ rootloop.index }}{{ rowloop.index }}');">
+                                        <td class="result">
+                                            <a href="javascript:;">{{ past_test["provider_name"] }}</a>
+                                        </td>
+                                        <td class="result">
+                                            <a href="javascript:;">{{ past_result["date"]|humanize_date }}</a>
+                                        </td>
+                                        <td class="result">
+                                            {{ display_status_img(past_test["test_outcome"]) }}
+                                        </td>
+                                    </tr>
+                                    {% for test in past_test['tests'] %}
+                                        <tr class="tt{{ rootloop.index }}{{ rowloop.index }}">
+                                            <td class="result"> {{ test["name"] }}</td>
+                                            <td class="result"> {{ test["duration"] }}</td>
+                                            <td class="result">
+                                                {{ display_status_img(test["result"]) }}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    <script type="text/javascript">
+                                        hide_rows('tt{{ rootloop.index }}{{ rowloop.index }}');
+                                    </script>
+                                {% endfor %}
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+
             </div>
 
         </div>
     </div>
 </div>
+<script>
+
+
+</script>
 </body>
 </html>

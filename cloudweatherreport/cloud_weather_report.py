@@ -10,6 +10,7 @@ from bundletester import tester
 from cloudweatherreport.reporter import Reporter
 import jujuclient
 from utils import (
+    get_provider_name,
     mkdir_p,
     read_file,
     run_action,
@@ -97,13 +98,17 @@ def main(args):
     for env_name in args.controller:
         test_results = run_bundle_test(args=args, env=env_name,
                                        test_plan=test_plan)
+        env = jujuclient.Environment.connect(env_name=env_name)
+        env_info = env.info()
+        client = jujuclient.Actions(env)
+        action_results = []
         if test_plan.get('benchmark'):
-            env = jujuclient.Environment.connect(env_name=env_name)
-            client = jujuclient.Actions(env)
             action_results = run_actions(test_plan, client)
-            results.append({"env_name": env_name,
-                            "test_results": ast.literal_eval(test_results),
-                            "action_results": action_results})
+        results.append({
+            "provider_name": get_provider_name(env_info["ProviderType"]),
+            "test_results": ast.literal_eval(test_results),
+            "action_results": action_results,
+            "info": env_info})
     bundle = test_plan.get('bundle')
     html_filename, json_filename = get_filenames(bundle)
     reporter = Reporter(bundle=bundle, results=results, options=args)

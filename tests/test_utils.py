@@ -13,6 +13,7 @@ from cloudweatherreport.utils import (
     run_action,
     mkdir_p,
     wait_for_action_complete,
+    get_provider_name,
 )
 
 
@@ -72,7 +73,14 @@ class TestUtil(TestCase):
         path = os.path.join(d, 'a/b/c')
         mkdir_p(path)
         self.assertTrue(os.path.isdir(path))
+        mkdir_p(path)  # Already exists test
         rmtree(d)
+
+    def test_get_provider_name(self):
+        name = get_provider_name('ec2')
+        self.assertEqual(name, 'Amazon Web Services')
+        name = get_provider_name('foo')
+        self.assertEqual(name, 'foo')
 
 
 class FakeActionClient:

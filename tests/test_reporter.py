@@ -1,5 +1,10 @@
 import json
-from tempfile import NamedTemporaryFile
+import os
+from shutil import rmtree
+from tempfile import (
+    NamedTemporaryFile,
+    mkdtemp
+)
 from unittest import TestCase
 
 from cloudweatherreport.reporter import Reporter
@@ -11,7 +16,8 @@ class TestReporter(TestCase):
         r = Reporter(None, None, None)
         with NamedTemporaryFile() as html_file:
             html_output = r.generate_html(
-                json_content=self.make_json(), output_file=html_file.name)
+                json_content=self.make_json(), output_file=html_file.name,
+                past_results=[])
             content = html_file.read()
         self.assertRegexpMatches(html_output, '1.55')
         self.assertRegexpMatches(html_output, '3.55')
@@ -25,12 +31,11 @@ class TestReporter(TestCase):
             json_result = reporter.generate_json(output_file=json_file.name)
             json_result = json.loads(json_result)
             content = json_file.read()
-        self.maxDiff = None
         for result in json_result["results"]:
-            self.assertIn(result["cloud"], ['aws', 'joyent'])
+            self.assertIn(result["provider_name"], ['aws', 'joyent'])
             for test in result["tests"]:
-                self.assertIn(test["name"],
-                              ['charm-proof', '00-setup', '10-actions'])
+                self.assertIn(
+                    test["name"], ['charm-proof', '00-setup', '10-actions'])
         self.assertIn('"name": "charm-proof"', content)
 
     def test_generate(self):
@@ -46,10 +51,37 @@ class TestReporter(TestCase):
         self.assertIn('charm-proof', html_content)
         self.assertEqual(json_content["bundle"]["name"], 'git')
 
+    def test_get_test_outcome(self):
+        r = Reporter(None, None, None)
+        results = [r.pass_str, r.pass_str]
+        self.assertEqual(r.get_test_outcome(results), r.all_passed_str)
+        results = [r.pass_str, r.fail_str]
+        self.assertEqual(r.get_test_outcome(results), r.some_failed_str)
+        results = [r.fail_str, r.fail_str]
+        self.assertEqual(r.get_test_outcome(results), r.all_failed_str)
+
+    def test_get_past_test_results(self):
+        temp = mkdtemp()
+        files = [os.path.join(temp, 'git-2015-12-02T22:22:21-result.json'),
+                 os.path.join(temp, 'git-2015-12-02T22:22:21-result.html'),
+                 os.path.join(temp, 'git-2015-12-02T22:22:22-result.json'),
+                 os.path.join(temp, 'foo-2015-12-02T22:22:23-result.json'),
+                 os.path.join(temp, 'git-2015-12-02T22:22:25-result.json')]
+        for f in files:
+            with open(f, 'w') as fp:
+                fp.write(self.make_json())
+        r = Reporter('git', None, None)
+        results, past_files = r.get_past_test_results(filename=files[0])
+        self.assertItemsEqual(past_files, [files[2], files[4]])
+        json_test_result = json.loads(self.make_json())
+        self.assertItemsEqual(results, [json_test_result, json_test_result])
+        rmtree(temp)
+
     def make_results(self):
         return [
             {
-                'env_name': 'aws',
+                'provider_name': 'aws',
+                'info': {"name": "ec2"},
                 'action_results': [{'repo': '/tmp/a'}, {'users': 'the dude'}],
                 'test_results': {
                     'tests': [
@@ -73,7 +105,8 @@ class TestReporter(TestCase):
                 },
             },
             {
-                'env_name': 'joyent',
+                'provider_name': 'joyent',
+                'info': {"name": "joyent"},
                 'action_results': [{'repo': '/tmp/a'}, {'users': 'the dude'}],
                 'test_results': {
                     'tests': [
@@ -100,6 +133,7 @@ class TestReporter(TestCase):
     def make_json(self):
         return """{
             "version": 1,
+            "date": "2015-12-02T22:22:22",
             "results": [
                 {
                     "tests": [
@@ -119,7 +153,15 @@ class TestReporter(TestCase):
                             "result": "PASS"
                         }
                     ],
-                    "cloud": "aws"
+                    "provider_name": "Amazon Web Services",
+                    "test_outcome": "All Passed",
+                     "info": {
+                        "ServerUUID": "0caecc18-b694-4e4c-81e7-a0551bcb7258",
+                        "ProviderType": "ec2",
+                        "UUID": "0caecc18-b694-4e4c-81e7-a0551bcb7258",
+                        "DefaultSeries": "trusty",
+                        "Name": "aws"
+                    }
                 },
                 {
                     "tests": [
@@ -136,10 +178,18 @@ class TestReporter(TestCase):
                         {
                             "duration": 3,
                             "name": "10-actions",
-                            "result": "PASS"
+                            "result": "FAIL"
                         }
                     ],
-                    "cloud": "joyent"
+                    "provider_name": "Joyent",
+                    "test_outcome": "Some Failed",
+                    "info": {
+                        "ServerUUID": "0caecc18-b694-4e4c-81e7-a0551bcb7258",
+                        "ProviderType": "joyent",
+                        "UUID": "0caecc18-b694-4e4c-81e7-a0551bcb7258",
+                        "DefaultSeries": "trusty",
+                        "Name": "joyent"
+                    }
                 }
             ],
             "bundle": {
