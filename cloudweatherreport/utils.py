@@ -19,6 +19,9 @@ def read_file(file_path, file_type=None):
 
 def run_action(client, unit, action, action_param=None, timeout=300):
     pending_action = client.enqueue_units(unit, action, action_param)
+    if pending_action['results'][0].get('error'):
+        raise Exception('Action failed {}'.format(
+            pending_action['results'][0].get('error')))
     result = wait_for_action_complete(
         client, pending_action['results'][0]['action']['tag'], timeout=timeout)
     return result['results'][0].get('output')

@@ -4,6 +4,7 @@ import argparse
 import ast
 from cStringIO import StringIO
 from datetime import datetime
+import json
 import os
 
 from bundletester import tester
@@ -106,7 +107,7 @@ def main(args):
             action_results = run_actions(test_plan, client)
         results.append({
             "provider_name": get_provider_name(env_info["ProviderType"]),
-            "test_results": ast.literal_eval(test_results),
+            "test_results": json.loads(test_results),
             "action_results": action_results,
             "info": env_info})
     bundle = test_plan.get('bundle')

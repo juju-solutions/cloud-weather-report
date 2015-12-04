@@ -196,7 +196,7 @@ class TestCloudWeatherReport(TestCase):
         return {'tests': ['test1', 'test2'], 'bundle': 'git'}
 
     def make_results(self):
-        return """{
+        return json.dumps({
                     'tests': [
                         {'returncode': 0,
                          'test': 'charm-proof',
@@ -215,4 +215,4 @@ class TestCloudWeatherReport(TestCase):
                          'suite': 'git',
                          }
                     ],
-            }"""
+            })
