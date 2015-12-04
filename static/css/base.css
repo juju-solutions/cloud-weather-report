@@ -1,0 +1,17 @@
+.dotted-border{
+    border-bottom: 1px dotted #ccc !important;
+}
+
+.dotted-right-border{
+    border-right: 1px dotted #ccc !important;
+
+}
+.title{
+    color: #fff;
+}
+.rhead {
+    background-color: inherit;
+}
+.result{
+    background-color: #fff;
+}

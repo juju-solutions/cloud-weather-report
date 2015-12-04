@@ -1,7 +1,12 @@
 from argparse import Namespace
+import json
 import os
+from shutil import rmtree
 from StringIO import StringIO
-from tempfile import NamedTemporaryFile
+from tempfile import (
+    NamedTemporaryFile,
+    mkdtemp,
+)
 from unittest import TestCase
 
 from mock import (
@@ -56,7 +61,7 @@ class TestCloudWeatherReport(TestCase):
                     args, 'foo', test_plan)
         self.assertEqual(output, 'test passed')
         call = Namespace(environment='foo', output=io_output, reporter='json',
-                         testdir='bundle-url', tests=['test1', 'test2'])
+                         testdir='git', tests=['test1', 'test2'])
         mock_tm.assert_called_once_with(call)
         mock_ntf.assert_called_once_with()
 
@@ -79,36 +84,71 @@ class TestCloudWeatherReport(TestCase):
         mock_ntf.assert_called_once_with()
 
     def test_main(self):
-        with NamedTemporaryFile() as output:
-            with NamedTemporaryFile() as test_plan_file:
-                test_plan = self.make_tst_plan_file(test_plan_file.name)
-                args = Namespace(controller=['aws'],
-                                 result_output=output.name,
-                                 test_plan=test_plan_file.name,
-                                 testdir='git')
-                with patch('cloudweatherreport.cloud_weather_report.'
-                           'run_bundle_test',
-                           autospec=True) as mock_rbt:
-                    cloud_weather_report.main(args)
-            html_output = output.read()
-            self.assertEqual(html_output, self.get_html_code())
+        run_bundle_test_p = patch(
+            'cloudweatherreport.cloud_weather_report.run_bundle_test',
+            autospec=True, return_value=self.make_results())
+        juju_client_p = patch(
+            'cloudweatherreport.cloud_weather_report.jujuclient',
+            autospec=True)
+        with NamedTemporaryFile() as html_output:
+            with NamedTemporaryFile() as json_output:
+                with NamedTemporaryFile() as test_plan_file:
+                    test_plan = self.make_tst_plan_file(test_plan_file.name)
+                    args = Namespace(controller=['aws'],
+                                     result_output=html_output.name,
+                                     test_plan=test_plan_file.name,
+                                     testdir='git')
+                    get_filenames_p = patch(
+                        'cloudweatherreport.cloud_weather_report.'
+                        'get_filenames', autospec=True, return_value=(
+                            html_output.name, json_output.name))
+                    with run_bundle_test_p as mock_rbt:
+                        with get_filenames_p as mock_gf:
+                            with juju_client_p as mock_jc:
+                                (mock_jc.Environment.connect.return_value.
+                                 info.return_value) = {"ProviderType": "ec2"}
+                                cloud_weather_report.main(args)
+                html_content = html_output.read()
+                json_content = json.loads(json_output.read())
+            self.assertRegexpMatches(html_content, '<title>git</title>')
+            self.assertEqual(json_content["bundle"]["name"], 'git')
+            self.assertEqual(json_content["results"][0]["provider_name"],
+                             'Amazon Web Services')
         mock_rbt.assert_called_once_with(args=args, env='aws',
                                          test_plan=test_plan)
+        mock_gf.assert_called_once_with('git')
 
     def test_main_multi_clouds(self):
+        run_bundle_test_p = patch(
+            'cloudweatherreport.cloud_weather_report.run_bundle_test',
+            autospec=True, return_value=self.make_results())
+        juju_client_p = patch(
+            'cloudweatherreport.cloud_weather_report.jujuclient',
+            autospec=True)
         with NamedTemporaryFile() as test_plan_file:
-            test_plan = self.make_tst_plan_file(test_plan_file.name)
-            args = Namespace(controller=['aws', 'gce'],
-                             result_output="result.html",
-                             test_plan=test_plan_file.name,
-                             testdir=None)
-            with patch('cloudweatherreport.cloud_weather_report.'
-                       'run_bundle_test',
-                       autospec=True) as mock_rbt:
-                cloud_weather_report.main(args)
+            with NamedTemporaryFile() as html_output:
+                with NamedTemporaryFile() as json_output:
+                    test_plan = self.make_tst_plan_file(test_plan_file.name)
+                    args = Namespace(controller=['aws', 'gce'],
+                                     result_output="result.html",
+                                     test_plan=test_plan_file.name,
+                                     testdir=None)
+                    get_filenames_p = patch(
+                        'cloudweatherreport.cloud_weather_report.'
+                        'get_filenames', autospec=True, return_value=(
+                            html_output.name, json_output.name))
+                    with run_bundle_test_p as mock_rbt:
+                        with get_filenames_p as mock_gf:
+                            with juju_client_p as mock_jc:
+                                (mock_jc.Environment.connect.return_value.
+                                 info.return_value) = {"ProviderType": "ec2"}
+                                cloud_weather_report.main(args)
+                    json_content = json.loads(json_output.read())
         calls = [call(args=args, env='aws', test_plan=test_plan),
                  call(args=args, env='gce', test_plan=test_plan)]
         self.assertEqual(mock_rbt.mock_calls, calls)
+        mock_gf.assert_called_once_with('git')
+        self.assertEqual(json_content["bundle"]["name"], 'git')
 
     def test_run_actions(self):
         content = """
@@ -132,6 +172,16 @@ class TestCloudWeatherReport(TestCase):
         self.assertEqual(mock_cr.mock_calls, calls)
         self.assertEqual(result, [3, 2, 1])
 
+    def test_get_filenames(self):
+        tempdir = mkdtemp()
+        with patch('cloudweatherreport.cloud_weather_report.run_action'):
+            h_file, j_file = cloud_weather_report.get_filenames('git')
+        rmtree(tempdir)
+        self.assertTrue(h_file.startswith('results/git-') and
+                        h_file.endswith('.html'))
+        self.assertTrue(j_file.startswith('results/git-') and
+                        j_file.endswith('.json'))
+
     def fake_tester_main(self, args):
         args.output.write('test passed')
 
@@ -143,9 +193,26 @@ class TestCloudWeatherReport(TestCase):
         return yaml.load(content)
 
     def make_tst_plan(self):
-        return {'tests': ['test1', 'test2'], 'bundle': 'bundle-url'}
+        return {'tests': ['test1', 'test2'], 'bundle': 'git'}
 
-    def get_html_code(self):
-        return ('<!DOCTYPE html>\n<html lang="en">\n<head>\n    '
-                '<meta charset="UTF-8">\n    <title>git</title>\n</head>\n'
-                '<body>\n\n</body>\n</html>')
+    def make_results(self):
+        return json.dumps({
+                    'tests': [
+                        {'returncode': 0,
+                         'test': 'charm-proof',
+                         'output': 'foo',
+                         'duration': 1.55,
+                         'suite': 'git',
+                         },
+                        {'returncode': 0,
+                         'test': '00-setup',
+                         'output': 'foo',
+                         'duration': 2.55,
+                         'suite': 'git'},
+                        {'returncode': 1,
+                         'test': '10-actions',
+                         'duration': 3.55,
+                         'suite': 'git',
+                         }
+                    ],
+            })

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="17px" height="16px" viewBox="0 0 17 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+    <!-- Generator: Sketch 3.3.3 (12072) - http://www.bohemiancoding.com/sketch -->
+    <title>Stroke 2</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <rect id="path-1" x="0" y="1799" width="1440" height="2580"></rect>
+    </defs>
+    <g id="Style-guide" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage">
+        <g id="Style-1" sketch:type="MSArtboardGroup" transform="translate(-533.000000, -3837.000000)">
+            <g id="paper-bg-copy-2">
+                <use fill="none" sketch:type="MSShapeGroup" xlink:href="#path-1"></use>
+                <use fill-opacity="0.6" fill="#FFFFFF" xlink:href="#path-1"></use>
+            </g>
+            <g id="Icons" sketch:type="MSLayerGroup" transform="translate(249.750000, 3744.000000)">
+                <g id="error" transform="translate(225.000000, 74.000000)" sketch:type="MSShapeGroup">
+                    <g id="Imported-Layers" transform="translate(30.500000, 0.000000)">
+                        <path d="M36,19.75 C40.004,19.75 43.25,22.996 43.25,27 C43.25,31.004 40.004,34.25 36,34.25 C31.996,34.25 28.75,31.004 28.75,27 C28.75,22.996 31.996,19.75 36,19.75 L36,19.75 Z" id="Fill-1" fill="#DF382C"></path>
+                        <path d="M36,19.75 C40.004,19.75 43.25,22.996 43.25,27 C43.25,31.004 40.004,34.25 36,34.25 C31.996,34.25 28.75,31.004 28.75,27 C28.75,22.996 31.996,19.75 36,19.75 L36,19.75 Z" id="Stroke-2" stroke="#DF382C" stroke-width="1.5"></path>
+                        <path d="M33,24 L39,30 M39,24 L33,30" id="Stroke-3" stroke="#FFFFFF" stroke-width="1.5"></path>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
