@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import argparse
-import ast
 from cStringIO import StringIO
 from datetime import datetime
 import json

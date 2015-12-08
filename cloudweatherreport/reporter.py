@@ -1,3 +1,4 @@
+import codecs
 from datetime import datetime
 import json
 import os
@@ -41,7 +42,7 @@ class Reporter:
             title=self.bundle, charm_name=self.bundle, results=results,
             past_results=past_results)
         if output_file:
-            with open(output_file, 'w') as stream:
+            with codecs.open(output_file, 'w', encoding='utf-8') as stream:
                 stream.write(html_content)
         return html_content
 
@@ -79,6 +80,8 @@ class Reporter:
                     {'name': test["test"],
                      'result': str_result,
                      'duration': test["duration"],
+                     'output': test["output"],
+                     'suite': test["suite"],
                      })
                 test_outcomes.append(str_result)
             output["results"].append(
@@ -91,7 +94,7 @@ class Reporter:
 
         json_result = json.dumps(output, indent=2)
         if output_file:
-            with open(output_file, 'w') as fp:
+            with codecs.open(output_file, 'w', encoding='utf-8') as fp:
                 fp.write(json_result)
         return json_result
 
@@ -105,7 +108,7 @@ class Reporter:
             pass
         results = []
         for f in files:
-            with open(f) as fp:
+            with codecs.open(f, 'r', encoding='utf-8') as fp:
                 results.append(json.load(fp))
         results = sorted(results, key=lambda r: r["date"], reverse=True)
         return results, files

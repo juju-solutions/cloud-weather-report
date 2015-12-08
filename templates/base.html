@@ -19,13 +19,13 @@
         }
     </script>
 </head>
-{% macro display_status_img(value) -%}
+{% macro display_status_img(value, size='30px') -%}
     {% if value == 'PASS' or value == 'All Passed' %}
-        <img src="../static/images/success.svg" width="30px" />
+        <img src="../static/images/success.svg" width={{ size }} />
     {% elif value == 'FAIL' or value == 'All Failed' %}
-        <img src="../static/images/error.svg"  width="30px"/>
+        <img src="../static/images/error.svg"  width={{ size }} />
     {% elif value == 'Some Failed' %}
-        <img src="../static/images/pending.svg" width="30px"/>
+        <img src="../static/images/pending.svg" width={{ size }} />
     {% else %}
         {{ value }}
     {% endif %}
@@ -51,22 +51,24 @@
             <div class="row">
                 <div class="twelve-col">
                     <div class="inner-wrapper">
-                        <div class="four-col no-margin-bottom dotted-right-border">
+                        <div class="three-col no-margin-bottom dotted-right-border">
                             <!-- relation goes here -->
                         </div>
                         <h3>Current test result</h3>
                         <div>
                             {{ results["date"]|humanize_date }}
                         </div>
-                        <div class="eight-col last-col no-margin-bottom">
+                        <div class="nine-col last-col no-margin-bottom">
                             <table style="table-layout:fixed">
                                 <col width="40px"/>
-                                <col width="30px"/>
                                 <col width="20px"/>
+                                <col width="20px"/>
+                                <col width="20px"/>
+                                <col width="30px"/>
                                 {% for result in results['results'] %}
                                     {% set rowloop = loop %}
                                     <tr onclick="toggle_rows('t{{ rowloop.index }}');" class="result">
-                                        <td colspan="2" class="rhead">
+                                        <td colspan="4" class="rhead">
                                             <a href="javascript:;">{{ result["provider_name"] }}</a>
                                         </td>
                                         <td class="rhead">
@@ -76,39 +78,42 @@
                                         </td>
                                     </tr>
                                     {% for test in result['tests'] %}
-                                        <tr class="t{{ rowloop.index }}">
+                                        <tr class="t{{ rowloop.index }} hide-it">
                                             <td class="result"> {{ test["name"] }}</td>
                                             <td class="result"> {{ test["duration"] }}</td>
-                                            <td class="result">
-                                                {{ display_status_img(test["result"]) }}
+                                            <td class="result"> {{ test["suite"] }}</td>
+                                            <td class="result" onclick="toggle_rows('output{{ rowloop.index }}{{ loop.index }}')">
+                                                <a href="javascript:;">Output</a>
+                                            </td>
+                                            <td class="result"> {{ display_status_img(test["result"]) }} </td>
+                                        </tr>
+                                        <tr class="output{{ rowloop.index }}{{ loop.index }} hide-it">
+                                            <td colspan="5">
+                                                <textarea cols="7" disabled class="textwrapper">{{ test.get("output", "no output")|safe }}</textarea>
                                             </td>
                                         </tr>
                                     {% endfor %}
-
-                                    <script type="text/javascript">
-                                        hide_rows('t{{ rowloop.index }}');
-                                    </script>
-
                                 {% endfor %}
-
                             </table>
                         </div>
                     </div>
                 </div>
 
-                <div class="eight-col last-col no-margin-bottom">
+                <div class="nine-col last-col no-margin-bottom">
                     <div class="inner-wrapper">
                         <h3>Past test results:</h3>
                         <table style="table-layout: fixed;">
                             <col width="40px"/>
-                            <col width="30px"/>
                             <col width="20px"/>
+                            <col width="20px"/>
+                            <col width="30px"/>
+                            <col width="30px"/>
                             {% for past_result in past_results %}
                                 {% set rootloop = loop %}
                                 {% for past_test in past_result["results"] %}
                                     {% set rowloop = loop %}
                                     <tr class="result" onclick="toggle_rows('tt{{ rootloop.index }}{{ rowloop.index }}');">
-                                        <td class="result">
+                                        <td class="result" colspan="3">
                                             <a href="javascript:;">{{ past_test["provider_name"] }}</a>
                                         </td>
                                         <td class="result">
@@ -119,11 +124,19 @@
                                         </td>
                                     </tr>
                                     {% for test in past_test['tests'] %}
-                                        <tr class="tt{{ rootloop.index }}{{ rowloop.index }}">
+                                        {% set past_output = 'output-p{}{}{}'.format(rootloop.index, rowloop.index, loop.index)  %}
+                                        <tr class="tt{{ rootloop.index }}{{ rowloop.index }} hide-it">
                                             <td class="result"> {{ test["name"] }}</td>
                                             <td class="result"> {{ test["duration"] }}</td>
-                                            <td class="result">
-                                                {{ display_status_img(test["result"]) }}
+                                            <td class="result"> {{ test["suite"] }}</td>
+                                            <td class="result" onclick="toggle_rows('{{ past_output }}')">
+                                                <a href="javascript:;">Output</a>
+                                            </td>
+                                            <td class="result"> {{ display_status_img(test["result"]) }} </td>
+                                        </tr>
+                                        <tr class="{{ past_output }} hide-it">
+                                            <td colspan="5">
+                                                <textarea cols="7" disabled class="textwrapper">{{ test.get("output", "no output")|safe }}</textarea>
                                             </td>
                                         </tr>
                                     {% endfor %}
