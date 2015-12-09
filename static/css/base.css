@@ -15,3 +15,15 @@
 .result{
     background-color: #fff;
 }
+
+.textwrapper
+{
+    width: 100%;
+    text-align: left;
+    border:1px solid #999999;
+    margin:5px 0;
+    min-height:100px;
+}
+.hide-it{
+    display: none;
+}

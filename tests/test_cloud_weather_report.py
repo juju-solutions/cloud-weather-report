@@ -196,23 +196,25 @@ class TestCloudWeatherReport(TestCase):
         return {'tests': ['test1', 'test2'], 'bundle': 'git'}
 
     def make_results(self):
-        return json.dumps({
-                    'tests': [
-                        {'returncode': 0,
-                         'test': 'charm-proof',
-                         'output': 'foo',
-                         'duration': 1.55,
-                         'suite': 'git',
-                         },
-                        {'returncode': 0,
-                         'test': '00-setup',
-                         'output': 'foo',
-                         'duration': 2.55,
-                         'suite': 'git'},
-                        {'returncode': 1,
-                         'test': '10-actions',
-                         'duration': 3.55,
-                         'suite': 'git',
-                         }
-                    ],
+        return json.dumps(
+            {
+                'tests': [
+                    {'returncode': 0,
+                     'test': 'charm-proof',
+                     'output': 'foo',
+                     'duration': 1.55,
+                     'suite': 'git',
+                     },
+                    {'returncode': 0,
+                     'test': '00-setup',
+                     'output': 'foo',
+                     'duration': 2.55,
+                     'suite': 'git'},
+                    {'returncode': 1,
+                     'test': '10-actions',
+                     'output': 'foo',
+                     'duration': 3.55,
+                     'suite': 'git',
+                     }
+                ],
             })

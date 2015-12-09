@@ -32,10 +32,16 @@ class TestReporter(TestCase):
             json_result = json.loads(json_result)
             content = json_file.read()
         for result in json_result["results"]:
+            self.assertItemsEqual(
+                result.keys(),
+                ['info', 'test_outcome', 'tests', 'provider_name'])
             self.assertIn(result["provider_name"], ['aws', 'joyent'])
             for test in result["tests"]:
                 self.assertIn(
                     test["name"], ['charm-proof', '00-setup', '10-actions'])
+                self.assertItemsEqual(
+                    test.keys(),
+                    ['duration', 'output', 'suite', 'name', 'result'])
         self.assertIn('"name": "charm-proof"', content)
 
     def test_generate(self):
@@ -87,17 +93,18 @@ class TestReporter(TestCase):
                     'tests': [
                         {'returncode': 0,
                          'test': 'charm-proof',
-                         'output': 'foo',
+                         'output': 'The dude abides.',
                          'duration': 1.55,
                          'suite': 'git',
                          },
                         {'returncode': 0,
                          'test': '00-setup',
-                         'output': 'foo',
+                         'output': 'nice marmot.',
                          'duration': 2.55,
                          'suite': 'git'},
                         {'returncode': 1,
                          'test': '10-actions',
+                         'output': 'Calm down your being very undude.',
                          'duration': 3.55,
                          'suite': 'git',
                          }
@@ -123,6 +130,7 @@ class TestReporter(TestCase):
                          'suite': 'git'},
                         {'returncode': 1,
                          'test': '10-actions',
+                         'output': 'foo',
                          'duration': 3,
                          'suite': 'git',
                          }
