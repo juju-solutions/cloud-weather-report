@@ -51,14 +51,18 @@
             <div class="row">
                 <div class="twelve-col">
                     <div class="inner-wrapper">
-                        <div class="three-col no-margin-bottom dotted-right-border">
-                            <!-- relation goes here -->
+                        <div class="five-col no-margin-bottom dotted-right-border">
+                            {% if svg_path %}
+                                <img src="{{ svg_path }}" />
+                            {% else %}
+                                Image not available
+                            {% endif %}
                         </div>
-                        <h3>Current test result</h3>
+                        <h3>Last test result</h3>
                         <div>
                             {{ results["date"]|humanize_date }}
                         </div>
-                        <div class="nine-col last-col no-margin-bottom">
+                        <div class="seven-col last-col no-margin-bottom">
                             <table style="table-layout:fixed">
                                 <col width="40px"/>
                                 <col width="20px"/>

@@ -7,7 +7,11 @@ from tempfile import (
 )
 from unittest import TestCase
 
+from mock import patch
+
 from cloudweatherreport.reporter import Reporter
+
+__metaclass__ = type
 
 
 class TestReporter(TestCase):
@@ -57,6 +61,31 @@ class TestReporter(TestCase):
         self.assertIn('charm-proof', html_content)
         self.assertEqual(json_content["bundle"]["name"], 'git')
 
+    def test_generate_with_svg(self):
+        tempdir = mkdtemp()
+        json_file = os.path.join(tempdir, 'file.json')
+        html_file = os.path.join(tempdir, 'file.html')
+        svg_file = os.path.join(tempdir, 'file.svg')
+        results = self.make_results()
+        fake_request = FakeRequest()
+        reporter = Reporter(bundle='git', results=results, options=None,
+                            bundle_yaml='bundle content')
+        with patch('cloudweatherreport.reporter.requests.post',
+                   autospec=True, return_value=fake_request) as mock_r:
+            reporter.generate(html_filename=html_file, json_filename=json_file)
+        mock_r.assert_called_once_with('http://svg.juju.solutions',
+                                       'bundle content')
+        with open(json_file) as fp:
+            json_content = json.loads(fp.read())
+        with open(html_file) as fp:
+            html_content = fp.read()
+        with open(svg_file) as fp:
+            svg_content = fp.read()
+        self.assertIn('charm-proof', html_content)
+        self.assertEqual(json_content["bundle"]["name"], 'git')
+        self.assertEqual(svg_content, 'svg content')
+        rmtree(tempdir)
+
     def test_get_test_outcome(self):
         r = Reporter(None, None, None)
         results = [r.pass_str, r.pass_str]
@@ -82,6 +111,22 @@ class TestReporter(TestCase):
         json_test_result = json.loads(self.make_json())
         self.assertItemsEqual(results, [json_test_result, json_test_result])
         rmtree(temp)
+
+    def test_generate_svg(self):
+        tempdir = mkdtemp()
+        svg_file = os.path.join(tempdir, 'foo')
+        r = Reporter(None, None, None, bundle_yaml='foo')
+        fake_request = FakeRequest()
+        with patch('cloudweatherreport.reporter.requests.post',
+                   autospec=True, return_value=fake_request) as mock_r:
+            svg = r.generate_svg(svg_file)
+            svg_path = "{}.svg".format(svg_file)
+            with open(svg_path) as fp:
+                content = fp.read()
+                self.assertEqual(content, 'svg content')
+        mock_r.assert_called_once_with('http://svg.juju.solutions', 'foo')
+        self.assertEqual(svg, svg_path)
+        rmtree(tempdir)
 
     def make_results(self):
         return [
@@ -207,3 +252,11 @@ class TestReporter(TestCase):
                 "machines": null
             }
         }"""
+
+
+class FakeRequest:
+    content = 'svg content'
+    status_code = 200
+
+    def raise_for_status(self):
+        pass

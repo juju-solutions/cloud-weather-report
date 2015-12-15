@@ -3,6 +3,7 @@ from datetime import (
     timedelta,
 )
 import errno
+import logging
 import os
 from time import sleep
 import yaml
@@ -59,3 +60,30 @@ def get_provider_name(provider_type):
         return name[provider_type]
     except KeyError:
         return provider_type
+
+
+def create_bundle_yaml(name=None, category="service"):
+    if not name:
+        return None
+    bundle_yaml = yaml.safe_dump({
+        'services': {
+            name: {
+                'charm': name,
+                'num_units': 1,
+                'annotations': {
+                    "gui-x": "610",
+                    "gui-y": "255",
+                },
+            },
+        },
+        'series': "trusty",
+        'relations': [
+            "{}:{}".format(name, category)]
+    }, indent=4, default_flow_style=False)
+    return bundle_yaml
+
+
+def configure_logging(log_level=logging.WARNING):
+    logging.basicConfig(
+        level=log_level, format='%(asctime)s %(levelname)s %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S')

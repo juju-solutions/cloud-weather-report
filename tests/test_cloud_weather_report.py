@@ -1,4 +1,5 @@
 from argparse import Namespace
+from collections import namedtuple
 import json
 import os
 from shutil import rmtree
@@ -57,7 +58,7 @@ class TestCloudWeatherReport(TestCase):
             with patch('cloudweatherreport.cloud_weather_report.tester.main',
                        autospec=True, side_effect=self.fake_tester_main
                        ) as mock_tm:
-                output = cloud_weather_report.run_bundle_test(
+                output, status = cloud_weather_report.run_bundle_test(
                     args, 'foo', test_plan)
         self.assertEqual(output, 'test passed')
         call = Namespace(environment='foo', output=io_output, reporter='json',
@@ -75,7 +76,7 @@ class TestCloudWeatherReport(TestCase):
             with patch('cloudweatherreport.cloud_weather_report.tester.main',
                        autospec=True, side_effect=self.fake_tester_main
                        ) as mock_tm:
-                output = cloud_weather_report.run_bundle_test(
+                output, status = cloud_weather_report.run_bundle_test(
                     args, 'foo', test_plan)
         self.assertEqual(output, 'test passed')
         call = Namespace(environment='foo', output=io_output, reporter='json',
@@ -84,9 +85,10 @@ class TestCloudWeatherReport(TestCase):
         mock_ntf.assert_called_once_with()
 
     def test_main(self):
+        status = self.make_status()
         run_bundle_test_p = patch(
             'cloudweatherreport.cloud_weather_report.run_bundle_test',
-            autospec=True, return_value=self.make_results())
+            autospec=True, return_value=(self.make_results(), status))
         juju_client_p = patch(
             'cloudweatherreport.cloud_weather_report.jujuclient',
             autospec=True)
@@ -97,7 +99,8 @@ class TestCloudWeatherReport(TestCase):
                     args = Namespace(controller=['aws'],
                                      result_output=html_output.name,
                                      test_plan=test_plan_file.name,
-                                     testdir='git')
+                                     testdir='git',
+                                     verbose=False)
                     get_filenames_p = patch(
                         'cloudweatherreport.cloud_weather_report.'
                         'get_filenames', autospec=True, return_value=(
@@ -119,9 +122,10 @@ class TestCloudWeatherReport(TestCase):
         mock_gf.assert_called_once_with('git')
 
     def test_main_multi_clouds(self):
+        status = self.make_status()
         run_bundle_test_p = patch(
             'cloudweatherreport.cloud_weather_report.run_bundle_test',
-            autospec=True, return_value=self.make_results())
+            autospec=True, return_value=(self.make_results(), status))
         juju_client_p = patch(
             'cloudweatherreport.cloud_weather_report.jujuclient',
             autospec=True)
@@ -132,7 +136,8 @@ class TestCloudWeatherReport(TestCase):
                     args = Namespace(controller=['aws', 'gce'],
                                      result_output="result.html",
                                      test_plan=test_plan_file.name,
-                                     testdir=None)
+                                     testdir=None,
+                                     verbose=False)
                     get_filenames_p = patch(
                         'cloudweatherreport.cloud_weather_report.'
                         'get_filenames', autospec=True, return_value=(
@@ -183,7 +188,7 @@ class TestCloudWeatherReport(TestCase):
                         j_file.endswith('.json'))
 
     def fake_tester_main(self, args):
-        args.output.write('test passed')
+        args.output.write('test passed'), 0
 
     def make_tst_plan_file(self, filename):
         test_plan = self.make_tst_plan()
@@ -218,3 +223,10 @@ class TestCloudWeatherReport(TestCase):
                      }
                 ],
             })
+
+    def make_status(self):
+        status = namedtuple('status', ['bundle_yaml', 'charm' 'return_code'])
+        status.return_code = 0
+        status.bundle_yaml = None
+        status.charm = None
+        return status

@@ -9,6 +9,7 @@ from unittest import TestCase
 import yaml
 
 from cloudweatherreport.utils import (
+    create_bundle_yaml,
     read_file,
     run_action,
     mkdir_p,
@@ -81,6 +82,24 @@ class TestUtil(TestCase):
         self.assertEqual(name, 'Amazon Web Services')
         name = get_provider_name('foo')
         self.assertEqual(name, 'foo')
+
+    def test_create_bundle_yaml(self):
+        bundle = create_bundle_yaml('mysql', 'db')
+        self.assertEqual(bundle, get_bundle_yaml())
+
+
+def get_bundle_yaml():
+    return """relations:
+- mysql:db
+series: trusty
+services:
+    mysql:
+        annotations:
+            gui-x: '610'
+            gui-y: '255'
+        charm: mysql
+        num_units: 1
+"""
 
 
 class FakeActionClient:

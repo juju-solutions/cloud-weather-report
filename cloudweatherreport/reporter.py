@@ -1,7 +1,10 @@
 import codecs
 from datetime import datetime
 import json
+import logging
 import os
+import requests
+import urllib
 
 from jinja2 import (
     Environment,
@@ -16,10 +19,11 @@ ISO_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
 class Reporter:
     """Generate report page."""
 
-    def __init__(self, bundle, results, options):
+    def __init__(self, bundle, results, options, bundle_yaml=None):
         self.bundle = bundle
         self.results = results
         self.options = options
+        self.bundle_yaml = bundle_yaml
         self.pass_str = 'PASS'
         self.fail_str = 'FAIL'
         self.all_passed_str = 'All Passed'
@@ -33,14 +37,33 @@ class Reporter:
             json_content=json_content, output_file=html_filename,
             past_results=past_results)
 
+    def generate_svg(self, filename):
+        if not self.bundle_yaml:
+            return None
+        filename, ext = os.path.splitext(filename)
+        svg_filename = "{}.svg".format(filename)
+        r = requests.post('http://svg.juju.solutions', self.bundle_yaml)
+        if r.status_code != requests.codes.ok:
+            logging.warn("Could not generate svg. Please check the content of "
+                         "Status code:{} \n Content: {}\n "
+                         "bundle.yaml:\n{}".format(r.status_code, r.content,
+                                                   self.bundle_yaml))
+            return None
+        with open(svg_filename, 'w') as fp:
+            fp.write(r.content)
+        return svg_filename
+
     def generate_html(self, json_content, output_file=None, past_results=None):
         env = Environment(loader=FileSystemLoader(searchpath='templates'))
         env.filters['humanize_date'] = humanize_date
         template = env.get_template('base.html')
         results = json.loads(json_content)
+        svg_filename = "{}.svg".format(os.path.splitext(output_file)[0])
+        svg_path = self.generate_svg(svg_filename)
+        svg = urllib.quote(os.path.basename(svg_path)) if svg_path else None
         html_content = template.render(
             title=self.bundle, charm_name=self.bundle, results=results,
-            past_results=past_results)
+            past_results=past_results, svg_path=svg)
         if output_file:
             with codecs.open(output_file, 'w', encoding='utf-8') as stream:
                 stream.write(html_content)
@@ -74,12 +97,14 @@ class Reporter:
         outcomes = []
         test_outcomes = []
         for result in self.results:
-            for test in result["test_results"]['tests']:
+            if not result.get('test_results'):
+                continue
+            for test in result['test_results'].get('tests', []):
                 str_result = self._to_str(test["returncode"])
                 outcomes.append(
                     {'name': test["test"],
                      'result': str_result,
-                     'duration': test["duration"],
+                     'duration': format(test["duration"], '.2f'),
                      'output': test["output"],
                      'suite': test["suite"],
                      })
