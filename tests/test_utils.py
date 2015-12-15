@@ -84,15 +84,12 @@ class TestUtil(TestCase):
         self.assertEqual(name, 'foo')
 
     def test_create_bundle_yaml(self):
-        bundle = create_bundle_yaml('mysql', 'db')
+        bundle = create_bundle_yaml('mysql')
         self.assertEqual(bundle, get_bundle_yaml())
 
 
 def get_bundle_yaml():
-    return """relations:
-- mysql:db
-series: trusty
-services:
+    return """services:
     mysql:
         annotations:
             gui-x: '610'

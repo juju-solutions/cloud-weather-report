@@ -99,8 +99,7 @@ def get_bundle_yaml(status):
     if status.bundle_yaml:
         return status.bundle_yaml
     elif status.charm:
-        category = status.charm.get('categories', ['service'])[0]
-        return create_bundle_yaml(status.charm.get("name"), category)
+        return create_bundle_yaml(status.charm.get("name"))
     return None
 
 

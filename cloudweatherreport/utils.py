@@ -62,7 +62,7 @@ def get_provider_name(provider_type):
         return provider_type
 
 
-def create_bundle_yaml(name=None, category="service"):
+def create_bundle_yaml(name=None):
     if not name:
         return None
     bundle_yaml = yaml.safe_dump({
@@ -76,9 +76,6 @@ def create_bundle_yaml(name=None, category="service"):
                 },
             },
         },
-        'series': "trusty",
-        'relations': [
-            "{}:{}".format(name, category)]
     }, indent=4, default_flow_style=False)
     return bundle_yaml
 
