@@ -4,12 +4,17 @@ import argparse
 from cStringIO import StringIO
 from datetime import datetime
 import json
+import logging
 import os
+import subprocess
+import sys
 
 from bundletester import tester
 from cloudweatherreport.reporter import Reporter
 import jujuclient
 from utils import (
+    configure_logging,
+    create_bundle_yaml,
     get_provider_name,
     mkdir_p,
     read_file,
@@ -65,8 +70,8 @@ def run_bundle_test(args, env, test_plan=None):
     args.environment = env
     args.reporter = 'json'
     args.testdir = test_plan.get('bundle') if test_plan else args.testdir
-    tester.main(args)
-    return test_result.getvalue()
+    status = tester.main(args)
+    return test_result.getvalue(), status
 
 
 def run_actions(test_plan, client):
@@ -90,14 +95,25 @@ def get_filenames(bundle):
     return html_filename, json_filename
 
 
+def get_bundle_yaml(status):
+    if status.bundle_yaml:
+        return status.bundle_yaml
+    elif status.charm:
+        return create_bundle_yaml(status.charm.get("name"))
+    return None
+
+
 def main(args):
+    log_level = logging.INFO if args.verbose else logging.WARNING
+    configure_logging(log_level)
     test_plan = None
     if args.test_plan:
         test_plan = read_file(args.test_plan, 'yaml')
     results = []
+    status = None
     for env_name in args.controller:
-        test_results = run_bundle_test(args=args, env=env_name,
-                                       test_plan=test_plan)
+        test_results, status = run_bundle_test(
+            args=args, env=env_name, test_plan=test_plan)
         env = jujuclient.Environment.connect(env_name=env_name)
         env_info = env.info()
         client = jujuclient.Actions(env)
@@ -106,17 +122,28 @@ def main(args):
             action_results = run_actions(test_plan, client)
         results.append({
             "provider_name": get_provider_name(env_info["ProviderType"]),
-            "test_results": json.loads(test_results),
+            "test_results": json.loads(test_results) if test_results else None,
             "action_results": action_results,
             "info": env_info})
     bundle = test_plan.get('bundle')
     html_filename, json_filename = get_filenames(bundle)
-    reporter = Reporter(bundle=bundle, results=results, options=args)
+    bundle_yaml = get_bundle_yaml(status)
+    reporter = Reporter(bundle=bundle, results=results, options=args,
+                        bundle_yaml=bundle_yaml)
     reporter.generate(html_filename=html_filename, json_filename=json_filename)
     return html_filename
 
+
+def file_open_with_app(filename):
+    opener = {'linux2': 'xdg-open', 'linux': 'xdg-open', 'darwin': 'open',
+              'win32': 'start'}
+    try:
+        subprocess.call([opener[sys.platform], filename])
+    except:
+        pass
 
 if __name__ == '__main__':
     args = parse_args()
     html_filename = main(args)
     print("Test result:\n  {}".format(html_filename))
+    file_open_with_app(html_filename)
