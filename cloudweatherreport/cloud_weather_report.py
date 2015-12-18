@@ -15,7 +15,9 @@ import jujuclient
 from utils import (
     configure_logging,
     create_bundle_yaml,
+    find_unit_by_service_name,
     get_provider_name,
+    is_unit,
     mkdir_p,
     read_file,
     run_action,
@@ -74,13 +76,20 @@ def run_bundle_test(args, env, test_plan=None):
     return test_result.getvalue(), status
 
 
-def run_actions(test_plan, client):
+def run_actions(test_plan, client, env_status):
     action_results = []
     for unit, actions in test_plan['benchmark'].items():
-        actions = [actions] if isinstance(actions, str) else actions
-        for action in actions:
-            result = run_action(client, unit, action)
-            action_results.append(result)
+        actions = {actions: None} if isinstance(actions, str) else actions
+        for action, params in actions.items():
+            logging.info('Running benchmark - Unit: {} Name: {} Params: {}'.
+                         format(unit, action, params))
+            if not is_unit(unit):
+                unit = find_unit_by_service_name(unit, env_status)
+            result = run_action(client, unit, action, action_param=params)
+            composite = result.get('meta', {}).get('composite')
+            if composite:
+                action_results.append({action: composite})
+            logging.info('Benchmark completed.')
     return action_results
 
 
@@ -96,6 +105,8 @@ def get_filenames(bundle):
 
 
 def get_bundle_yaml(status):
+    if not status:
+        return None
     if status.bundle_yaml:
         return status.bundle_yaml
     elif status.charm:
@@ -104,24 +115,27 @@ def get_bundle_yaml(status):
 
 
 def main(args):
-    log_level = logging.INFO if args.verbose else logging.WARNING
+    log_level = logging.DEBUG if args.verbose else logging.INFO
     configure_logging(log_level)
+    logging.info('Cloud Weather Report started.')
     test_plan = None
     if args.test_plan:
         test_plan = read_file(args.test_plan, 'yaml')
     results = []
     status = None
     for env_name in args.controller:
-        test_results, status = run_bundle_test(
-            args=args, env=env_name, test_plan=test_plan)
         env = jujuclient.Environment.connect(env_name=env_name)
         env_info = env.info()
+        provider_name = get_provider_name(env_info["ProviderType"])
+        logging.info('Running test on {}.'.format(provider_name))
+        test_results, status = run_bundle_test(
+            args=args, env=env_name, test_plan=test_plan)
         client = jujuclient.Actions(env)
         action_results = []
         if test_plan.get('benchmark'):
-            action_results = run_actions(test_plan, client)
+            action_results = run_actions(test_plan, client, env.status())
         results.append({
-            "provider_name": get_provider_name(env_info["ProviderType"]),
+            "provider_name": provider_name,
             "test_results": json.loads(test_results) if test_results else None,
             "action_results": action_results,
             "info": env_info})
@@ -141,6 +155,7 @@ def file_open_with_app(filename):
         subprocess.call([opener[sys.platform], filename])
     except:
         pass
+
 
 if __name__ == '__main__':
     args = parse_args()

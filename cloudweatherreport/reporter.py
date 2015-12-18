@@ -29,6 +29,7 @@ class Reporter:
         self.all_passed_str = 'All Passed'
         self.all_failed_str = 'All Failed'
         self.some_failed_str = 'Some Failed'
+        self.no_test_result = 'No test result'
 
     def generate(self, html_filename, json_filename):
         json_content = self.generate_json(output_file=json_filename)
@@ -74,7 +75,9 @@ class Reporter:
 
     def get_test_outcome(self, results):
         test_results = [True if r == self.pass_str else False for r in results]
-        if all(test_results):
+        if not test_results:
+            return self.no_test_result
+        elif all(test_results):
             return self.all_passed_str
         elif not any(test_results):
             return self.all_failed_str
@@ -96,10 +99,9 @@ class Reporter:
         }
         outcomes = []
         test_outcomes = []
+        benchmarks = []
         for result in self.results:
-            if not result.get('test_results'):
-                continue
-            for test in result['test_results'].get('tests', []):
+            for test in (result.get('test_results') or {}).get('tests', []):
                 str_result = self._to_str(test["returncode"])
                 outcomes.append(
                     {'name': test["test"],
@@ -109,13 +111,19 @@ class Reporter:
                      'suite': test["suite"],
                      })
                 test_outcomes.append(str_result)
+            for benchmark in result.get('action_results', []):
+                benchmarks.append(benchmark)
+
             output["results"].append(
                 {"provider_name": result['provider_name'],
                  "tests": outcomes,
                  "info": result['info'],
-                 "test_outcome": self.get_test_outcome(test_outcomes)})
+                 "test_outcome": self.get_test_outcome(test_outcomes),
+                 "benchmarks": benchmarks,
+                 })
             outcomes = []
             test_outcomes = []
+            benchmarks = []
 
         json_result = json.dumps(output, indent=2)
         if output_file:
