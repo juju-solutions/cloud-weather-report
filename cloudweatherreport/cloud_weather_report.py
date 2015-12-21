@@ -10,14 +10,14 @@ import subprocess
 import sys
 
 from bundletester import tester
-from cloudweatherreport.reporter import Reporter
 import jujuclient
+
+from cloudweatherreport.reporter import Reporter
 from utils import (
     configure_logging,
     create_bundle_yaml,
-    find_unit_by_service_name,
+    find_unit,
     get_provider_name,
-    is_unit,
     mkdir_p,
     read_file,
     run_action,
@@ -83,9 +83,10 @@ def run_actions(test_plan, client, env_status):
         for action, params in actions.items():
             logging.info('Running benchmark - Unit: {} Name: {} Params: {}'.
                          format(unit, action, params))
-            if not is_unit(unit):
-                unit = find_unit_by_service_name(unit, env_status)
-            result = run_action(client, unit, action, action_param=params)
+            real_unit = find_unit(unit, env_status)
+            if not real_unit:
+                raise Exception("unit not found: {}".format(unit))
+            result = run_action(client, real_unit, action, action_param=params)
             composite = result.get('meta', {}).get('composite')
             if composite:
                 action_results.append({action: composite})

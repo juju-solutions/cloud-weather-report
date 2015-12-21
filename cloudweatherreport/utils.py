@@ -94,17 +94,18 @@ def configure_logging(log_level=logging.WARNING):
         datefmt='%Y-%m-%d %H:%M:%S')
 
 
-def find_unit_by_service_name(service_name, env_status):
+def find_unit(unit, env_status):
+    index = re.search(r'/\d+$', unit)
+    service_name = unit
+    unit_index = 0
+    if index:
+        service_name = unit.replace(index.group(), "")
+        unit_index = index.group()[1:]
     units = (env_status.get('Services') or {}).get(service_name, {}).get(
         'Units')
     if not units:
         return None
-    unit = sorted(units.keys())[0]
-    return unit
-
-
-def is_unit(unit):
-    r = re.search(r'/\d+$', unit)
-    if r:
-        return True
-    return False
+    try:
+        return sorted(units.keys())[int(unit_index)]
+    except IndexError:
+        return None

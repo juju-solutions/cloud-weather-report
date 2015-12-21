@@ -176,7 +176,7 @@ class TestCloudWeatherReport(TestCase):
                    autospec=True,
                    return_value=self.make_benchmark_data()) as mock_cr:
             result = cloud_weather_report.run_actions(
-                test_plan, mock_client, None)
+                test_plan, mock_client, self.make_env_status())
         calls = [call(mock_client, 'siege/0', 'siege',
                       action_param={"time": "30s", "concurrency": 10})]
         self.assertEqual(mock_cr.mock_calls, calls)
@@ -195,7 +195,7 @@ class TestCloudWeatherReport(TestCase):
                    autospec=True,
                    return_value=self.make_benchmark_data()) as mock_cr:
             result = cloud_weather_report.run_actions(
-                test_plan, mock_client, None)
+                test_plan, mock_client, self.make_env_status())
         calls = [call(mock_client, 'siege/0', 'siege', action_param=None)]
         self.assertEqual(mock_cr.mock_calls, calls)
         self.assertEqual(result, [
@@ -220,7 +220,7 @@ class TestCloudWeatherReport(TestCase):
                 side_effect=[self.make_benchmark_data(),
                              self.make_benchmark_data()]) as mock_cr:
             result = cloud_weather_report.run_actions(
-                test_plan, mock_client, None)
+                test_plan, mock_client, self.make_env_status())
         calls = [call(mock_client, 'siege/0', 'siege',
                       action_param={"time": "30s", "concurrency": 10}),
                  call(mock_client, 'mongodb/0', 'perf',
@@ -237,7 +237,7 @@ class TestCloudWeatherReport(TestCase):
                     siege:
                         time: 30s
                         concurrency: 10
-                mongodb/0:
+                mongodb:
                     perf
             """
         test_plan = yaml.load(content)
@@ -248,7 +248,7 @@ class TestCloudWeatherReport(TestCase):
                 side_effect=[self.make_benchmark_data(),
                              self.make_benchmark_data()]) as mock_cr:
             result = cloud_weather_report.run_actions(
-                test_plan, mock_client, None)
+                test_plan, mock_client, self.make_env_status())
         calls = [call(mock_client, 'siege/0', 'siege',
                       action_param={"time": "30s", "concurrency": 10}),
                  call(mock_client, 'mongodb/0', 'perf',
@@ -321,4 +321,11 @@ class TestCloudWeatherReport(TestCase):
                     "value": "200"
                 }
             }
+        }
+
+    def make_env_status(self):
+        return {
+            "Services": {
+                "siege": {"Units": {"siege/0": "foo"}},
+                "mongodb": {"Units": {"mongodb/0": "foo"}}}
         }

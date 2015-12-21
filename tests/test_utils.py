@@ -10,8 +10,7 @@ import yaml
 
 from cloudweatherreport.utils import (
     create_bundle_yaml,
-    find_unit_by_service_name,
-    is_unit,
+    find_unit,
     read_file,
     run_action,
     mkdir_p,
@@ -95,26 +94,28 @@ class TestUtil(TestCase):
         bundle = create_bundle_yaml('mysql')
         self.assertEqual(bundle, get_bundle_yaml())
 
-    def test_is_unit(self):
-        unit = is_unit('mongodb/0')
-        self.assertTrue(unit)
-        unit = is_unit('mongodb')
-        self.assertFalse(unit)
-
-    def test_find_unit_by_service_name(self):
+    def test_find_unit(self):
         status = {
             "Services": {"mongodb": {"Units": {"mongodb/0": "foo"}}}
         }
-        unit = find_unit_by_service_name("mongodb", status)
+        unit = find_unit("mongodb", status)
         self.assertEqual(unit, "mongodb/0")
 
         status = {
             "Services": {"mongodb": {"Units": {
                 "mongodb/1": "foo", "mongodb/0": "foo"}}}
         }
-        unit = find_unit_by_service_name("mongodb", status)
+        unit = find_unit("mongodb", status)
         self.assertEqual(unit, "mongodb/0")
-        unit = find_unit_by_service_name("Foo", status)
+
+    def test_find_unit_none(self):
+        status = {
+            "Services": {"mongodb": {"Units": {"mongodb/1": "foo"}}}
+        }
+        unit = find_unit("mongodb/1", status)
+        self.assertIsNone(unit, None)
+
+        unit = find_unit("Foo", status)
         self.assertIsNone(unit, None)
 
 
