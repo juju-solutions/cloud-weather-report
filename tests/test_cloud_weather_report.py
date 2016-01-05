@@ -18,9 +18,13 @@ from mock import (
 import yaml
 
 from cloudweatherreport import cloud_weather_report
+from tests.common_test import setup_test_logging
 
 
 class TestCloudWeatherReport(TestCase):
+
+    def setUp(self):
+        setup_test_logging(self)
 
     def test_parse_args_defaults(self):
         args = cloud_weather_report.parse_args(['aws', 'test_plan'])
@@ -161,21 +165,98 @@ class TestCloudWeatherReport(TestCase):
                 - foo-test
                 - bar-test
             benchmark:
-                unit_1:
-                    - action1
-                    - action2
-                unit_2: action
+                siege/0:
+                    siege:
+                        time: 30s
+                        concurrency: 10
             """
         test_plan = yaml.load(content)
         mock_client = MagicMock()
         with patch('cloudweatherreport.cloud_weather_report.run_action',
-                   autospec=True, side_effect=[3, 2, 1]) as mock_cr:
-            result = cloud_weather_report.run_actions(test_plan, mock_client)
-        calls = [call(mock_client, 'unit_1', 'action1'),
-                 call(mock_client, 'unit_1', 'action2'),
-                 call(mock_client, 'unit_2', 'action')]
+                   autospec=True,
+                   return_value=self.make_benchmark_data()) as mock_cr:
+            result = cloud_weather_report.run_actions(
+                test_plan, mock_client, self.make_env_status())
+        calls = [call(mock_client, 'siege/0', 'siege',
+                      action_param={"time": "30s", "concurrency": 10})]
         self.assertEqual(mock_cr.mock_calls, calls)
-        self.assertEqual(result, [3, 2, 1])
+        self.assertEqual(result, [
+            {"siege": self.make_benchmark_data()["meta"]["composite"]}])
+
+    def test_run_actions_benchmark_with_no_param(self):
+        content = """
+            benchmark:
+                siege/0:
+                    siege
+            """
+        test_plan = yaml.load(content)
+        mock_client = MagicMock()
+        with patch('cloudweatherreport.cloud_weather_report.run_action',
+                   autospec=True,
+                   return_value=self.make_benchmark_data()) as mock_cr:
+            result = cloud_weather_report.run_actions(
+                test_plan, mock_client, self.make_env_status())
+        calls = [call(mock_client, 'siege/0', 'siege', action_param=None)]
+        self.assertEqual(mock_cr.mock_calls, calls)
+        self.assertEqual(result, [
+            {"siege": self.make_benchmark_data()["meta"]["composite"]}])
+
+    def test_run_actions_multi_params(self):
+        content = """
+            benchmark:
+                siege/0:
+                    siege:
+                        time: 30s
+                        concurrency: 10
+                mongodb/0:
+                    perf:
+                        runtime: 60
+            """
+        test_plan = yaml.load(content)
+        mock_client = MagicMock()
+        with patch(
+                'cloudweatherreport.cloud_weather_report.run_action',
+                autospec=True,
+                side_effect=[self.make_benchmark_data(),
+                             self.make_benchmark_data()]) as mock_cr:
+            result = cloud_weather_report.run_actions(
+                test_plan, mock_client, self.make_env_status())
+        calls = [call(mock_client, 'siege/0', 'siege',
+                      action_param={"time": "30s", "concurrency": 10}),
+                 call(mock_client, 'mongodb/0', 'perf',
+                      action_param={"runtime": 60})]
+        self.assertItemsEqual(mock_cr.mock_calls, calls)
+        self.assertEqual(result, [
+            {'perf': self.make_benchmark_data()["meta"]["composite"]},
+            {'siege': self.make_benchmark_data()["meta"]["composite"]}])
+
+    def test_run_actions_single_and_multi_params(self):
+        content = """
+            benchmark:
+                siege/0:
+                    siege:
+                        time: 30s
+                        concurrency: 10
+                mongodb:
+                    perf
+            """
+        test_plan = yaml.load(content)
+        mock_client = MagicMock()
+        with patch(
+                'cloudweatherreport.cloud_weather_report.run_action',
+                autospec=True,
+                side_effect=[self.make_benchmark_data(),
+                             self.make_benchmark_data()]) as mock_cr:
+            result = cloud_weather_report.run_actions(
+                test_plan, mock_client, self.make_env_status())
+        calls = [call(mock_client, 'siege/0', 'siege',
+                      action_param={"time": "30s", "concurrency": 10}),
+                 call(mock_client, 'mongodb/0', 'perf',
+                      action_param=None)]
+        self.assertItemsEqual(mock_cr.mock_calls, calls)
+        self.assertEqual(result, [
+            {"perf": self.make_benchmark_data()["meta"]["composite"]},
+            {"siege": self.make_benchmark_data()["meta"]["composite"]}])
 
     def test_get_filenames(self):
         tempdir = mkdtemp()
@@ -230,3 +311,21 @@ class TestCloudWeatherReport(TestCase):
         status.bundle_yaml = None
         status.charm = None
         return status
+
+    def make_benchmark_data(self):
+        return {
+            "meta": {
+                "composite": {
+                    "direction": "desc",
+                    "units": "ops/sec",
+                    "value": "200"
+                }
+            }
+        }
+
+    def make_env_status(self):
+        return {
+            "Services": {
+                "siege": {"Units": {"siege/0": "foo"}},
+                "mongodb": {"Units": {"mongodb/0": "foo"}}}
+        }

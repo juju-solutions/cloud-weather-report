@@ -10,11 +10,15 @@ from unittest import TestCase
 from mock import patch
 
 from cloudweatherreport.reporter import Reporter
+from tests.common_test import setup_test_logging
 
 __metaclass__ = type
 
 
 class TestReporter(TestCase):
+
+    def setUp(self):
+        setup_test_logging(self)
 
     def test_generate_html(self):
         r = Reporter(None, None, None)
@@ -38,7 +42,8 @@ class TestReporter(TestCase):
         for result in json_result["results"]:
             self.assertItemsEqual(
                 result.keys(),
-                ['info', 'test_outcome', 'tests', 'provider_name'])
+                ['info', 'test_outcome', 'tests', 'provider_name',
+                 'benchmarks'])
             self.assertIn(result["provider_name"], ['aws', 'joyent'])
             for test in result["tests"]:
                 self.assertIn(
