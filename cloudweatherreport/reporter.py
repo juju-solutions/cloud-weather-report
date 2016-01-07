@@ -62,9 +62,11 @@ class Reporter:
         svg_filename = "{}.svg".format(os.path.splitext(output_file)[0])
         svg_path = self.generate_svg(svg_filename)
         svg = urllib.quote(os.path.basename(svg_path)) if svg_path else None
+        history = self.get_by_provider(past_results) if past_results else None
         html_content = template.render(
             title=self.bundle, charm_name=self.bundle, results=results,
-            past_results=past_results, svg_path=svg)
+            past_results=past_results, svg_path=svg, history=history,
+            )
         if output_file:
             with codecs.open(output_file, 'w', encoding='utf-8') as stream:
                 stream.write(html_content)
@@ -145,6 +147,18 @@ class Reporter:
                 results.append(json.load(fp))
         results = sorted(results, key=lambda r: r["date"], reverse=True)
         return results, files
+
+    def get_by_provider(self, results):
+        outcome = {}
+        for result in results:
+            if result.get('results'):
+                for test_result in result['results']:
+                    key = test_result['provider_name']
+                    if key in outcome:
+                        outcome[key].append(result)
+                    else:
+                        outcome[key] = [result]
+        return outcome
 
 
 def humanize_date(value, input_format=ISO_TIME_FORMAT):

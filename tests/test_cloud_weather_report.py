@@ -260,13 +260,22 @@ class TestCloudWeatherReport(TestCase):
 
     def test_get_filenames(self):
         tempdir = mkdtemp()
-        with patch('cloudweatherreport.cloud_weather_report.run_action'):
-            h_file, j_file = cloud_weather_report.get_filenames('git')
+        h_file, j_file = cloud_weather_report.get_filenames('git')
         rmtree(tempdir)
         self.assertTrue(h_file.startswith('results/git-') and
                         h_file.endswith('.html'))
         self.assertTrue(j_file.startswith('results/git-') and
                         j_file.endswith('.json'))
+
+    def test_get_filenames_url(self):
+        tempdir = mkdtemp()
+        h_file, j_file = cloud_weather_report.get_filenames(
+            'http://example.com/~git')
+        rmtree(tempdir)
+        self.assertTrue(h_file.startswith(
+            'results/http___example_com__git') and h_file.endswith('.html'))
+        self.assertTrue(j_file.startswith(
+            'results/http___example_com__git') and j_file.endswith('.json'))
 
     def fake_tester_main(self, args):
         args.output.write('test passed'), 0
