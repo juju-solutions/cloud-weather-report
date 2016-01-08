@@ -1,7 +1,5 @@
-bundle: cs:git
-tests:
+bundle: cs:mongodb
 benchmark:
-  git/0:
-    - list-repos
-    - list-users
-
+    mongodb:
+        perf:
+            runtime: 60

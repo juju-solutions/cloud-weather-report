@@ -21,48 +21,43 @@
 </head>
 {% macro display_status_img(value, size='30px') -%}
     {% if value == 'PASS' or value == 'All Passed' %}
-        <img src="../static/images/success.svg" width={{ size }} />
+        <span class="test-result pass"></span>
     {% elif value == 'FAIL' or value == 'All Failed' %}
-        <img src="../static/images/error.svg"  width={{ size }} />
+        <span class="test-result fail"></span>
     {% elif value == 'Some Failed' %}
-        <img src="../static/images/pending.svg" width={{ size }} />
+        <span class="test-result fail"></span>
     {% else %}
-        {{ value }}
+        <span class="test-result no-result"></span>
     {% endif %}
 {%- endmacro %}
 <body class="details-page">
 <div class="container">
 
-    <header class="banner global" role="banner">
-        <nav role="navigation" class="nav-primary nav-right">
-            <div class="logo">
-                <h2><a href="/">Cloud Weather Report</a></h2>
-            </div>
-        </nav>
-    </header>
 
     <div class="wrapper">
         <div id="main-content">
 
-            <div class="row dotted-border">
-                <h2>{{ charm_name }}</h2>
+            <div class="row">
+                <h2>Cloud Weather Report</h2>
             </div>
 
-            <div class="row">
+            <div class="row no-border">
                 <div class="twelve-col">
-                    <div class="inner-wrapper">
-                        <div class="five-col no-margin-bottom dotted-right-border">
+
+                    <div class="six-col">
+                        <div><h3>{{ charm_name }}</h3></div>
+                        <div class="dotted-border box-grey align-center">
                             {% if svg_path %}
-                                <img src="{{ svg_path }}" />
+                                <img src="{{ svg_path }}" class="svg-img" />
                             {% else %}
                                 Image not available
                             {% endif %}
                         </div>
-                        <h3>Last test result</h3>
+                    </div>
+
+                    <div class="six-col last-col no-margin-bottom">
+                        <div><h3>Last {{ results["date"]|humanize_date }}</h3></div>
                         <div>
-                            {{ results["date"]|humanize_date }}
-                        </div>
-                        <div class="seven-col last-col no-margin-bottom">
                             <table style="table-layout:fixed">
                                 <col width="40px"/>
                                 <col width="20px"/>
@@ -70,12 +65,19 @@
                                 <col width="20px"/>
                                 <col width="30px"/>
                                 {% for result in results['results'] %}
+
                                     {% set rowloop = loop %}
                                     <tr onclick="toggle_rows('t{{ rowloop.index }}');" class="result">
-                                        <td colspan="4" class="rhead">
+                                        <td  class="rhead last-result">
                                             <a href="javascript:;">{{ result["provider_name"] }}</a>
                                         </td>
-                                        <td class="rhead">
+                                        <td colspan="3" class="rhead last-result sparkline">
+                                            <!--
+                                            <embed src="../static/images/line.svg?1,1,1,2,2,1" type="image/svg+xml"
+                                            height="50" width="100">
+                                            -->
+                                        </td>
+                                        <td class="rhead last-result">
                                             <a href="javascript:;">
                                                 {{  display_status_img(result.get("test_outcome")) }}
                                             </a>
@@ -83,13 +85,10 @@
                                     </tr>
                                     {% for test in result['tests'] %}
                                         <tr class="t{{ rowloop.index }} hide-it">
-                                            <td class="result"> {{ test["name"] }}</td>
-                                            <td class="result"> {{ test["duration"] }}</td>
-                                            <td class="result"> {{ test["suite"] }}</td>
-                                            <td class="result" onclick="toggle_rows('output{{ rowloop.index }}{{ loop.index }}')">
-                                                <a href="javascript:;">Output</a>
+                                            <td colspan="4" class="" onclick="toggle_rows('output{{ rowloop.index }}{{ loop.index }}')">
+                                                <a href="javascript:;">{{ test["name"] }}</a>
                                             </td>
-                                            <td class="result"> {{ display_status_img(test["result"]) }} </td>
+                                            <td class="">{{ display_status_img(test["result"]) }}</td>
                                         </tr>
                                         <tr class="output{{ rowloop.index }}{{ loop.index }} hide-it">
                                             <td colspan="5">
@@ -97,61 +96,33 @@
                                             </td>
                                         </tr>
                                     {% endfor %}
+
                                 {% endfor %}
                             </table>
                         </div>
                     </div>
                 </div>
 
-                <div class="nine-col last-col no-margin-bottom">
-                    <div class="inner-wrapper">
-                        <h3>Past test results:</h3>
-                        <table style="table-layout: fixed;">
-                            <col width="40px"/>
-                            <col width="20px"/>
-                            <col width="20px"/>
-                            <col width="30px"/>
-                            <col width="30px"/>
-                            {% for past_result in past_results %}
-                                {% set rootloop = loop %}
-                                {% for past_test in past_result["results"] %}
-                                    {% set rowloop = loop %}
-                                    <tr class="result" onclick="toggle_rows('tt{{ rootloop.index }}{{ rowloop.index }}');">
-                                        <td class="result" colspan="3">
-                                            <a href="javascript:;">{{ past_test["provider_name"] }}</a>
-                                        </td>
-                                        <td class="result">
-                                            <a href="javascript:;">{{ past_result["date"]|humanize_date }}</a>
-                                        </td>
-                                        <td class="result">
-                                            {{ display_status_img(past_test["test_outcome"]) }}
-                                        </td>
-                                    </tr>
-                                    {% for test in past_test['tests'] %}
-                                        {% set past_output = 'output-p{}{}{}'.format(rootloop.index, rowloop.index, loop.index)  %}
-                                        <tr class="tt{{ rootloop.index }}{{ rowloop.index }} hide-it">
-                                            <td class="result"> {{ test["name"] }}</td>
-                                            <td class="result"> {{ test["duration"] }}</td>
-                                            <td class="result"> {{ test["suite"] }}</td>
-                                            <td class="result" onclick="toggle_rows('{{ past_output }}')">
-                                                <a href="javascript:;">Output</a>
-                                            </td>
-                                            <td class="result"> {{ display_status_img(test["result"]) }} </td>
-                                        </tr>
-                                        <tr class="{{ past_output }} hide-it">
-                                            <td colspan="5">
-                                                <textarea cols="7" disabled class="textwrapper">{{ test.get("output", "no output")|safe }}</textarea>
-                                            </td>
-                                        </tr>
+                <div class="twelve-col no-margin-bottom">
+                    <h3>Report history</h3>
+                    <table style="table-layout: fixed;">
+                        {% if history %}
+                            {% for provider,values in history.iteritems() %}
+                                <tr>
+                                    <td class="history">{{ provider }}</td>
+                                    {% for value in values %}
+                                        {% for result in value['results'] %}
+                                            <td class="history">{{ display_status_img(result["test_outcome"]) }}</td>
+                                        {% endfor %}
                                     {% endfor %}
-                                    <script type="text/javascript">
-                                        hide_rows('tt{{ rootloop.index }}{{ rowloop.index }}');
-                                    </script>
-                                {% endfor %}
+                                </tr>
                             {% endfor %}
-                        </table>
-                    </div>
+                        {% endif %}
+                    </table>
                 </div>
+
+
+
 
             </div>
 

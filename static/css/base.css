@@ -1,10 +1,9 @@
 .dotted-border{
-    border-bottom: 1px dotted #ccc !important;
+    border: 1px dotted #ccc !important;
 }
 
 .dotted-right-border{
     border-right: 1px dotted #ccc !important;
-
 }
 .title{
     color: #fff;
@@ -26,4 +25,45 @@
 }
 .hide-it{
     display: none;
+}
+
+.test-result, .test-result:before, .test-result:after {
+    padding: 0;
+    border-radius: 12px;
+    height: 12px;
+    min-width: 12px;
+    display: inline-block;
+}
+
+.pass, .pass:before, .pass:after {
+    color: #18A900;
+    background-color: #18A900;
+}
+
+.fail, .fail:before, .fail:after{
+    color: #ff3300;
+    background-color: #ff3300;
+}
+.no-result, .no-result:before, .no-result:after {
+    color:#ccc;
+    background-color:#ccc;
+}
+
+.history{
+    background-color: #fff;
+}
+
+.svg-img{
+    max-height: 400px;
+}
+
+.last-result {
+    height: 40px;
+    border: none;
+    border-bottom: 1px dotted #ccc !important;
+}
+
+.sparkline {
+    width: 30px;
+    height: 35px;
 }

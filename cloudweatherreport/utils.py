@@ -59,10 +59,15 @@ def mkdir_p(path):
 
 
 def get_provider_name(provider_type):
-    name = {'azure': 'Azure', 'cloudsigma': 'CloudSigma',
-            'ec2': 'Amazon Web Services', 'gce': 'Google Compute Engine',
-            'joyent': 'Joyent', 'local': 'Local', 'maas': 'MAAS',
-            'openstack': 'OpenStack', 'vsphere': 'vSphere',
+    name = {'azure': 'Azure',
+            'cloudsigma': 'CloudSigma',
+            'ec2': 'AWS',
+            'gce': 'GCE',
+            'joyent': 'Joyent',
+            'local': 'Local',
+            'maas': 'MAAS',
+            'openstack': 'OpenStack',
+            'vsphere': 'vSphere',
             }
     try:
         return name[provider_type]
