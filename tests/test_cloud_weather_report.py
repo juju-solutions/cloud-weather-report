@@ -120,7 +120,7 @@ class TestCloudWeatherReport(TestCase):
             self.assertRegexpMatches(html_content, '<title>git</title>')
             self.assertEqual(json_content["bundle"]["name"], 'git')
             self.assertEqual(json_content["results"][0]["provider_name"],
-                             'Amazon Web Services')
+                             'AWS')
         mock_rbt.assert_called_once_with(args=args, env='aws',
                                          test_plan=test_plan)
         mock_gf.assert_called_once_with('git')
@@ -276,6 +276,10 @@ class TestCloudWeatherReport(TestCase):
             'results/http___example_com__git') and h_file.endswith('.html'))
         self.assertTrue(j_file.startswith(
             'results/http___example_com__git') and j_file.endswith('.json'))
+        h_file, j_file = cloud_weather_report.get_filenames(
+            'cs:~user/mysql-benchmark')
+        self.assertTrue(j_file.startswith(
+            'results/cs__user_mysql_benchmark') and j_file.endswith('.json'))
 
     def fake_tester_main(self, args):
         args.output.write('test passed'), 0

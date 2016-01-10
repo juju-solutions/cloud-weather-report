@@ -50,7 +50,18 @@
 }
 
 .history{
+    table-layout: fixed;
+    width: auto
+}
+
+.history > tbody > tr > td {
     background-color: #fff;
+    width: 70px;
+    word-wrap:break-word;
+}
+
+.history > tbody > tr > td:first-child {
+    width: 170px;
 }
 
 .svg-img{

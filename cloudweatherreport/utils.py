@@ -1,8 +1,10 @@
+import codecs
 from datetime import (
     datetime,
     timedelta,
 )
 import errno
+import json
 import logging
 import os
 import re
@@ -114,3 +116,34 @@ def find_unit(unit, env_status):
         return sorted(units.keys())[int(unit_index)]
     except IndexError:
         return None
+
+
+def get_all_test_results(bundle_name, dir_path):
+    files = [os.path.join(dir_path, f) for f in os.listdir(dir_path)
+             if f.startswith(bundle_name) and f.endswith('.json')]
+    results = []
+    for f in files:
+        with codecs.open(f, 'r', encoding='utf-8') as fp:
+            results.append(json.load(fp))
+    results = sorted(results, key=lambda r: r["date"])
+    return results
+
+
+def get_benchmark_data(file_prefix, dir_path, provider_name):
+    results = get_all_test_results(file_prefix, dir_path)
+    values = []
+    for result in results:
+        if result.get('results'):
+            for test_result in result['results']:
+                if (test_result.get('benchmarks') and
+                   provider_name == test_result['provider_name']):
+                    try:
+                        values.append(
+                            test_result['benchmarks'][0].values()[0]["value"])
+                    except (KeyError, AttributeError):
+                        raise Exception('Non standardized benchmark format.')
+    return values
+
+
+def file_prefix(bundle_name):
+    return "".join([c if c.isalnum() else "_" for c in bundle_name])

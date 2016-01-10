@@ -72,10 +72,10 @@
                                             <a href="javascript:;">{{ result["provider_name"] }}</a>
                                         </td>
                                         <td colspan="3" class="rhead last-result sparkline">
-                                            <!--
-                                            <embed src="../static/images/line.svg?1,1,1,2,2,1" type="image/svg+xml"
+                                            {% if result.get('benchmarks') %}
+                                                <embed src="../static/images/line.svg?{{ ",".join(result['benchmarks'][0].values()[0]["all_values"]) }}" type="image/svg+xml"
                                             height="50" width="100">
-                                            -->
+                                            {% endif %}
                                         </td>
                                         <td class="rhead last-result">
                                             <a href="javascript:;">
@@ -105,14 +105,14 @@
 
                 <div class="twelve-col no-margin-bottom">
                     <h3>Report history</h3>
-                    <table style="table-layout: fixed;">
+                    <table class="history">
                         {% if history %}
                             {% for provider,values in history.iteritems() %}
                                 <tr>
-                                    <td class="history">{{ provider }}</td>
+                                    <td>{{ provider }}</td>
                                     {% for value in values %}
                                         {% for result in value['results'] %}
-                                            <td class="history">{{ display_status_img(result["test_outcome"]) }}</td>
+                                            <td>{{ display_status_img(result["test_outcome"]) }}</td>
                                         {% endfor %}
                                     {% endfor %}
                                 </tr>
@@ -120,9 +120,6 @@
                         {% endif %}
                     </table>
                 </div>
-
-
-
 
             </div>
 

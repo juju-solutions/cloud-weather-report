@@ -27,10 +27,10 @@ class TestReporter(TestCase):
                 json_content=self.make_json(), output_file=html_file.name,
                 past_results=[])
             content = html_file.read()
-        self.assertRegexpMatches(html_output, '1.55')
-        self.assertRegexpMatches(html_output, '3.55')
-        self.assertRegexpMatches(content, '1.55')
-        self.assertRegexpMatches(content, '3.55')
+        self.assertRegexpMatches(html_output, 'AWS')
+        self.assertRegexpMatches(html_output, 'Joyent')
+        self.assertRegexpMatches(content, 'AWS')
+        self.assertRegexpMatches(content, 'Joyent')
 
     def test_generate_json(self):
         results = self.make_results()
@@ -211,7 +211,7 @@ class TestReporter(TestCase):
                             "result": "PASS"
                         }
                     ],
-                    "provider_name": "Amazon Web Services",
+                    "provider_name": "AWS",
                     "test_outcome": "All Passed",
                      "info": {
                         "ServerUUID": "0caecc18-b694-4e4c-81e7-a0551bcb7258",
