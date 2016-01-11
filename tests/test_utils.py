@@ -12,13 +12,14 @@ import yaml
 from cloudweatherreport.utils import (
     create_bundle_yaml,
     find_unit,
-    get_benchmark_data,
     get_all_test_results,
+    get_benchmark_data,
+    get_provider_name,
+    iter_units,
+    mkdir_p,
     read_file,
     run_action,
-    mkdir_p,
     wait_for_action_complete,
-    get_provider_name,
 )
 from tests.common_test import(
     setup_test_logging,
@@ -100,28 +101,37 @@ class TestUtil(TestCase):
         self.assertEqual(bundle, get_bundle_yaml())
 
     def test_find_unit(self):
-        status = {
-            "Services": {"mongodb": {"Units": {"mongodb/0": "foo"}}}
-        }
-        unit = find_unit("mongodb", status)
-        self.assertEqual(unit, "mongodb/0")
-
-        status = {
-            "Services": {"mongodb": {"Units": {
-                "mongodb/1": "foo", "mongodb/0": "foo"}}}
-        }
-        unit = find_unit("mongodb", status)
-        self.assertEqual(unit, "mongodb/0")
+        unit = find_unit("plugin", make_fake_status())
+        self.assertEqual(unit, "plugin/6")
 
     def test_find_unit_none(self):
-        status = {
-            "Services": {"mongodb": {"Units": {"mongodb/1": "foo"}}}
-        }
-        unit = find_unit("mongodb/1", status)
+        unit = find_unit("plugin/10", make_fake_status())
         self.assertIsNone(unit, None)
 
-        unit = find_unit("Foo", status)
+        unit = find_unit("Foo", make_fake_status())
         self.assertIsNone(unit, None)
+
+    def test_find_unit_complex(self):
+        status = make_fake_status()
+        unit = find_unit('plugin', status)
+        self.assertEqual(unit, 'plugin/6')
+        unit = find_unit('plugin/0', status)
+        self.assertEqual(unit, 'plugin/6')
+        unit = find_unit('plugin/1', status)
+        self.assertEqual(unit, 'plugin/7')
+        unit = find_unit('hive', status)
+        self.assertEqual(unit, 'hive/0')
+        unit = find_unit('fake', status)
+        self.assertIs(unit, None)
+
+    def test_iter_units(self):
+        status = make_fake_status()
+        units = list(iter_units(status))
+        units = [x for x, _ in units]
+        expected = ['compute-slave/10', 'compute-slave/9', 'plugin/7',
+                    'hdfs-master/3', 'hive/0', 'plugin/6', 'mysql/3',
+                    'secondary-namenode/3']
+        self.assertItemsEqual(units, expected)
 
     def test_get_all_test_results(self):
         temp = mkdtemp()
@@ -233,3 +243,151 @@ def make_fake_results(date="2015-12-02T22:22:22", provider_name='AWS',
             "machines": None
         }
     })
+
+
+def make_fake_status():
+    return json.loads(json.dumps(
+        {
+            "AvailableVersion": "",
+            "EnvironmentName": "aws",
+            "Machines": {},
+            "Networks": {},
+            "Services": {
+                "compute-slave": {
+                    "Charm": "cs:trusty/apache-hadoop-compute-slave-9",
+                    "Status": {
+                        "Data": {},
+                        "Version": ""
+                    },
+                    "SubordinateTo": [],
+                    "Units": {
+                        "compute-slave/10": {
+                            "AgentState": "started",
+                            "Subordinates": None,
+                            "AgentStateInfo": "",
+                            "Workload": {
+                                "Data": {},
+                                "Status": "active",
+                                "Version": ""
+                            }
+                        },
+                        "compute-slave/9": {
+                            "AgentState": "started",
+                            "Subordinates": {
+                                "plugin/7": {
+                                    "AgentState": "started",
+                                    "Subordinates": None,
+                                    "Workload": {
+                                        "Data": {},
+                                        "Version": ""
+                                    }
+                                }
+                            },
+                            "UnitAgent": {
+                                "Data": {},
+                                "Version": "1.25.0"
+                            },
+                            "Workload": {
+                                "Data": {},
+                                "Version": ""
+                            }
+                        }
+                    }
+                },
+                "hdfs-master": {
+                    "Charm": "cs:trusty/apache-hadoop-hdfs-master-9",
+                    "Status": {
+                        "Data": {},
+                        "Version": ""
+                    },
+                    "SubordinateTo": [],
+                    "Units": {
+                        "hdfs-master/3": {
+                            "AgentState": "started",
+                            "Subordinates": None,
+                            "Workload": {
+                                "Data": {},
+                                "Status": "active",
+                                "Version": ""
+                            }
+                        }
+                    }
+                },
+                "hive": {
+                    "Charm": "cs:trusty/apache-hive-10",
+                    "Status": {
+                        "Data": {},
+                        "Version": ""
+                    },
+                    "SubordinateTo": [],
+                    "Units": {
+                        "hive/0": {
+                            "AgentState": "started",
+                            "Subordinates": {
+                                "plugin/6": {
+                                    "AgentState": "started",
+                                    "Subordinates": None,
+                                    "Workload": {
+                                        "Data": {},
+                                        "Version": ""
+                                    }
+                                }
+                            },
+                            "Workload": {
+                                "Data": {},
+                                "Version": ""
+                            }
+                        }
+                    }
+                },
+                "mysql": {
+                    "Charm": "cs:trusty/mysql-29",
+                    "Status": {
+                        "Data": {},
+                        "Version": ""
+                    },
+                    "SubordinateTo": [],
+                    "Units": {
+                        "mysql/3": {
+                            "AgentState": "started",
+                            "Subordinates": None,
+                            "Workload": {
+                                "Data": {},
+                                "Version": ""
+                            }
+                        }
+                    }
+                },
+                "plugin": {
+                    "Charm": "cs:trusty/apache-hadoop-plugin-9",
+                    "Status": {
+                        "Data": None,
+                        "Version": ""
+                    },
+                    "SubordinateTo": [
+                        "hive",
+                        "compute-slave"
+                    ],
+                    "Units": None
+                },
+                "secondary-namenode": {
+                    "Charm": "cs:trusty/apache-hadoop-hdfs-secondary-7",
+                    "Status": {
+                        "Data": {},
+                        "Version": ""
+                    },
+                    "SubordinateTo": [],
+                    "Units": {
+                        "secondary-namenode/3": {
+                            "AgentState": "started",
+                            "Subordinates": None,
+                            "Workload": {
+                                "Data": {},
+                                "Version": ""
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ))

@@ -7,7 +7,6 @@ import errno
 import json
 import logging
 import os
-import re
 from time import sleep
 import yaml
 
@@ -101,19 +100,29 @@ def configure_logging(log_level=logging.WARNING):
         datefmt='%Y-%m-%d %H:%M:%S')
 
 
-def find_unit(unit, env_status):
-    index = re.search(r'/\d+$', unit)
-    service_name = unit
-    unit_index = 0
-    if index:
-        service_name = unit.replace(index.group(), "")
-        unit_index = index.group()[1:]
-    units = (env_status.get('Services') or {}).get(service_name, {}).get(
-        'Units')
+def iter_units(status):
+    services = status['Services'] or {}
+    for service_name, service in sorted(services.items()):
+        units = service.get('Units') or {}
+        for unit_name, unit in sorted(units.items()):
+            yield unit_name, unit
+            subordinates = unit.get('Subordinates') or {}
+            for sub_name, sub in sorted(subordinates.items()):
+                yield sub_name, sub
+
+
+def find_unit(unit, status):
+    unit = unit.split('/')
+    name = unit[0]
+    try:
+        unit_index = unit[1]
+    except IndexError:
+        unit_index = 0
+    units = [n for n, _ in iter_units(status) if n.split('/')[0] == name]
     if not units:
         return None
     try:
-        return sorted(units.keys())[int(unit_index)]
+        return sorted(units)[int(unit_index)]
     except IndexError:
         return None
 

@@ -107,12 +107,14 @@
                     <h3>Report history</h3>
                     <table class="history">
                         {% if history %}
-                            {% for provider,values in history.iteritems() %}
+                            {% for provider, values in history.iteritems() %}
                                 <tr>
                                     <td>{{ provider }}</td>
                                     {% for value in values %}
                                         {% for result in value['results'] %}
-                                            <td>{{ display_status_img(result["test_outcome"]) }}</td>
+                                            {% if result.get('provider_name') == provider %}
+                                                <td>{{ display_status_img(result["test_outcome"]) }}</td>
+                                            {% endif %}
                                         {% endfor %}
                                     {% endfor %}
                                 </tr>

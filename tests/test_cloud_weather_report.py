@@ -19,6 +19,7 @@ import yaml
 
 from cloudweatherreport import cloud_weather_report
 from tests.common_test import setup_test_logging
+from tests.test_utils import make_fake_status
 
 
 class TestCloudWeatherReport(TestCase):
@@ -165,8 +166,8 @@ class TestCloudWeatherReport(TestCase):
                 - foo-test
                 - bar-test
             benchmark:
-                siege/0:
-                    siege:
+                plugin:
+                    terasort:
                         time: 30s
                         concurrency: 10
             """
@@ -176,18 +177,18 @@ class TestCloudWeatherReport(TestCase):
                    autospec=True,
                    return_value=self.make_benchmark_data()) as mock_cr:
             result = cloud_weather_report.run_actions(
-                test_plan, mock_client, self.make_env_status())
-        calls = [call(mock_client, 'siege/0', 'siege',
+                test_plan, mock_client, make_fake_status())
+        calls = [call(mock_client, 'plugin/6', 'terasort',
                       action_param={"time": "30s", "concurrency": 10})]
         self.assertEqual(mock_cr.mock_calls, calls)
         self.assertEqual(result, [
-            {"siege": self.make_benchmark_data()["meta"]["composite"]}])
+            {"terasort": self.make_benchmark_data()["meta"]["composite"]}])
 
     def test_run_actions_benchmark_with_no_param(self):
         content = """
             benchmark:
-                siege/0:
-                    siege
+                plugin/1:
+                    terasort
             """
         test_plan = yaml.load(content)
         mock_client = MagicMock()
@@ -195,22 +196,20 @@ class TestCloudWeatherReport(TestCase):
                    autospec=True,
                    return_value=self.make_benchmark_data()) as mock_cr:
             result = cloud_weather_report.run_actions(
-                test_plan, mock_client, self.make_env_status())
-        calls = [call(mock_client, 'siege/0', 'siege', action_param=None)]
+                test_plan, mock_client, make_fake_status())
+        calls = [call(mock_client, 'plugin/7', 'terasort', action_param=None)]
         self.assertEqual(mock_cr.mock_calls, calls)
         self.assertEqual(result, [
-            {"siege": self.make_benchmark_data()["meta"]["composite"]}])
+            {"terasort": self.make_benchmark_data()["meta"]["composite"]}])
 
     def test_run_actions_multi_params(self):
         content = """
             benchmark:
-                siege/0:
-                    siege:
+                plugin/0:
+                    terasort:
                         time: 30s
-                        concurrency: 10
-                mongodb/0:
-                    perf:
-                        runtime: 60
+                plugin/1:
+                    terasort
             """
         test_plan = yaml.load(content)
         mock_client = MagicMock()
@@ -220,25 +219,23 @@ class TestCloudWeatherReport(TestCase):
                 side_effect=[self.make_benchmark_data(),
                              self.make_benchmark_data()]) as mock_cr:
             result = cloud_weather_report.run_actions(
-                test_plan, mock_client, self.make_env_status())
-        calls = [call(mock_client, 'siege/0', 'siege',
-                      action_param={"time": "30s", "concurrency": 10}),
-                 call(mock_client, 'mongodb/0', 'perf',
-                      action_param={"runtime": 60})]
+                test_plan, mock_client, make_fake_status())
+        calls = [call(mock_client, 'plugin/6', 'terasort',
+                      action_param={"time": "30s"}),
+                 call(mock_client, 'plugin/7', 'terasort', action_param=None)]
         self.assertItemsEqual(mock_cr.mock_calls, calls)
         self.assertEqual(result, [
-            {'perf': self.make_benchmark_data()["meta"]["composite"]},
-            {'siege': self.make_benchmark_data()["meta"]["composite"]}])
+            {'terasort': self.make_benchmark_data()["meta"]["composite"]},
+            {'terasort': self.make_benchmark_data()["meta"]["composite"]}])
 
     def test_run_actions_single_and_multi_params(self):
         content = """
             benchmark:
-                siege/0:
-                    siege:
+                plugin/0:
+                    terasort:
                         time: 30s
-                        concurrency: 10
-                mongodb:
-                    perf
+                plugin/1:
+                    terasort2
             """
         test_plan = yaml.load(content)
         mock_client = MagicMock()
@@ -248,15 +245,15 @@ class TestCloudWeatherReport(TestCase):
                 side_effect=[self.make_benchmark_data(),
                              self.make_benchmark_data()]) as mock_cr:
             result = cloud_weather_report.run_actions(
-                test_plan, mock_client, self.make_env_status())
-        calls = [call(mock_client, 'siege/0', 'siege',
-                      action_param={"time": "30s", "concurrency": 10}),
-                 call(mock_client, 'mongodb/0', 'perf',
+                test_plan, mock_client, make_fake_status())
+        calls = [call(mock_client, 'plugin/6', 'terasort',
+                      action_param={"time": "30s"}),
+                 call(mock_client, 'plugin/7', 'terasort2',
                       action_param=None)]
         self.assertItemsEqual(mock_cr.mock_calls, calls)
         self.assertEqual(result, [
-            {"perf": self.make_benchmark_data()["meta"]["composite"]},
-            {"siege": self.make_benchmark_data()["meta"]["composite"]}])
+            {"terasort": self.make_benchmark_data()["meta"]["composite"]},
+            {"terasort2": self.make_benchmark_data()["meta"]["composite"]}])
 
     def test_get_filenames(self):
         tempdir = mkdtemp()
