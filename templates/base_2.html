@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" type="text/css" media="screen" href="../static/css/ubuntu-styles.css">
+    <link rel="stylesheet" type="text/css" href="../static/css/base2.css">
+    <script type='text/javascript' src='../static/js/jquery.min.js'></script>
+    <script type='text/javascript' src='../static/js/highcharts.js'></script>
+    <script type="text/javascript">
+        function hide_rows(name) {
+            name = '.' + name;
+            $(name).hide();
+            return false;
+        }
+        function toggle_rows(name) {
+            name = '.' + name;
+            $(name).toggle();
+            return false;
+        }
+        function display_chart (chart_data) {
+            chart_data = JSON.parse(chart_data);
+            h_charts = {
+                 chart: {
+                     renderTo: 'containter',
+                     borderLeftWidth: 1,
+                     borderColor: '#eee',
+                     backgroundColor: null,
+                     color: '#333',
+                     style : {
+                         fontFamily: 'Ubuntu, Arial, "libra sans", sans-serif;',
+                     }
+                 },
+
+                title: {
+                    text: 'Benchmark Results'
+                },
+                subtitle: {
+                    text: chart_data['title']
+                },
+                xAxis: {
+                    categories: []
+                },
+                yAxis: {
+                    title: {
+                        text: chart_data['yaxis_title']
+                    },
+                    plotLines: [{
+                        value: 0,
+                        width: 1,
+                        color: '#808080'
+                    }]
+                },
+                tooltip: {
+                    valueSuffix: chart_data['yaxis_title']
+                },
+                legend: {
+                    layout: 'vertical',
+                    align: 'right',
+                    verticalAlign: 'middle',
+                    borderWidth: 0
+                },
+                credits: {
+                    enabled: false
+                },
+                series: chart_data['series']
+            };
+            $('#container').highcharts(h_charts);
+        }
+    </script>
+</head>
+{% macro display_status_img(value, size='30px') -%}
+    {% if value == 'PASS' or value == 'All Passed' %}
+        <span class="test-result pass"></span>
+    {% elif value == 'FAIL' or value == 'All Failed' %}
+        <span class="test-result fail"></span>
+    {% elif value == 'Some Failed' %}
+        <span class="test-result fail"></span>
+    {% else %}
+        <span class="test-result no-result"></span>
+    {% endif %}
+{%- endmacro %}
+<body class="details-page">
+<div class="container">
+
+
+    <div class="wrapper">
+        <div id="main-content">
+
+            <div class="row">
+                <h2>Cloud Weather Report</h2>
+            </div>
+
+            <div class="row no-border box">
+                <div class="twelve-col">
+                        <div>
+                            <h3>{{ charm_name }}</h3>
+                        </div>
+                        <div class="dotted-border box-grey align-center">
+                            {% if svg_path %}
+                                <img src="{{ svg_path }}" class="svg-img" />
+                            {% else %}
+                                Image not available
+                            {% endif %}
+                        </div>
+                </div>
+            </div>
+
+
+            <div class="row no-border box">
+
+                <div class="twelve-col">
+                    <div>
+                        <h3>Last run: {{ results["date"]|humanize_date }}</h3>
+                    </div>
+                    <div class="four-col last-result-box">
+                            <table class="last-result">
+                                {% for result in results['results'] %}
+
+                                    {% set rowloop = loop %}
+                                    <tr onclick="toggle_rows('t{{ rowloop.index }}');" class="result">
+                                        <td colspan="4" class="rhead">
+                                            <a href="javascript:;">{{ result["provider_name"] }}</a>
+                                        </td>
+                                        <td class="rhead">
+                                            <a href="javascript:;">
+                                                {{  display_status_img(result.get("test_outcome")) }}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% for test in result['tests'] %}
+                                        <tr class="t{{ rowloop.index }} hide-it">
+                                            <td colspan="4" class="" onclick="toggle_rows('output{{ rowloop.index }}{{ loop.index }}')">
+                                                <a href="javascript:;">{{ test["name"] }}</a>
+                                            </td>
+                                            <td class="">{{ display_status_img(test["result"]) }}</td>
+                                        </tr>
+                                        <tr class="output{{ rowloop.index }}{{ loop.index }} hide-it">
+                                            <td colspan="5">
+                                                <textarea cols="7" disabled class="textwrapper">{{ test.get("output", "no output")|safe }}</textarea>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+
+                                {% endfor %}
+                            </table>
+                    </div>
+
+                     <div class="eight-col no-border last-col no-margin-bottom">
+                        <div id="container" class="chart"><div>
+                        <script type="text/javascript">
+                            display_chart('{{ chart_data }}')
+                        </script>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row no-border box">
+
+                <div class="twelve-col no-margin-bottom">
+                    <h3>Report history</h3>
+                    <table class="history">
+                        {% if history %}
+                            {% for provider, values in history.iteritems() %}
+                                <tr>
+                                    <td>{{ provider }}</td>
+                                    {% for value in values %}
+                                        {% for result in value['results'] %}
+                                            {% if result.get('provider_name') == provider %}
+                                                <td>{{ display_status_img(result["test_outcome"]) }}</td>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
