@@ -1,11 +1,12 @@
+import codecs
 from datetime import (
     datetime,
     timedelta,
 )
 import errno
+import json
 import logging
 import os
-import re
 from time import sleep
 import yaml
 
@@ -99,18 +100,59 @@ def configure_logging(log_level=logging.WARNING):
         datefmt='%Y-%m-%d %H:%M:%S')
 
 
-def find_unit(unit, env_status):
-    index = re.search(r'/\d+$', unit)
-    service_name = unit
-    unit_index = 0
-    if index:
-        service_name = unit.replace(index.group(), "")
-        unit_index = index.group()[1:]
-    units = (env_status.get('Services') or {}).get(service_name, {}).get(
-        'Units')
+def iter_units(status):
+    services = status['Services'] or {}
+    for service_name, service in sorted(services.items()):
+        units = service.get('Units') or {}
+        for unit_name, unit in sorted(units.items()):
+            yield unit_name, unit
+            subordinates = unit.get('Subordinates') or {}
+            for sub_name, sub in sorted(subordinates.items()):
+                yield sub_name, sub
+
+
+def find_unit(unit, status):
+    unit = unit.split('/')
+    name = unit[0]
+    try:
+        unit_index = unit[1]
+    except IndexError:
+        unit_index = 0
+    units = [n for n, _ in iter_units(status) if n.split('/')[0] == name]
     if not units:
         return None
     try:
-        return sorted(units.keys())[int(unit_index)]
+        return sorted(units)[int(unit_index)]
     except IndexError:
         return None
+
+
+def get_all_test_results(bundle_name, dir_path):
+    files = [os.path.join(dir_path, f) for f in os.listdir(dir_path)
+             if f.startswith(bundle_name) and f.endswith('.json')]
+    results = []
+    for f in files:
+        with codecs.open(f, 'r', encoding='utf-8') as fp:
+            results.append(json.load(fp))
+    results = sorted(results, key=lambda r: r["date"])
+    return results
+
+
+def get_benchmark_data(file_prefix, dir_path, provider_name):
+    results = get_all_test_results(file_prefix, dir_path)
+    values = []
+    for result in results:
+        if result.get('results'):
+            for test_result in result['results']:
+                if (test_result.get('benchmarks') and
+                   provider_name == test_result['provider_name']):
+                    try:
+                        values.append(
+                            test_result['benchmarks'][0].values()[0]["value"])
+                    except (KeyError, AttributeError):
+                        raise Exception('Non standardized benchmark format.')
+    return values
+
+
+def file_prefix(bundle_name):
+    return "".join([c if c.isalnum() else "_" for c in bundle_name])

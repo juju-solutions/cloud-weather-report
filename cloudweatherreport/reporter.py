@@ -11,6 +11,9 @@ from jinja2 import (
     FileSystemLoader,
 )
 
+from cloudweatherreport.utils import file_prefix
+
+
 __metaclass__ = type
 
 ISO_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
@@ -45,8 +48,9 @@ class Reporter:
         svg_filename = "{}.svg".format(filename)
         r = requests.post('http://svg.juju.solutions', self.bundle_yaml)
         if r.status_code != requests.codes.ok:
-            logging.warn("Could not generate svg. Please check the content of "
-                         "Status code:{} \n Content: {}\n "
+            logging.warn("Could not generate svg. Response from "
+                         "svg.juju.solutions: \n"
+                         "Status code:{} \nContent: {}\n"
                          "bundle.yaml:\n{}".format(r.status_code, r.content,
                                                    self.bundle_yaml))
             return None
@@ -136,7 +140,8 @@ class Reporter:
     def get_past_test_results(self, filename):
         dir = os.path.dirname(filename)
         files = [os.path.join(dir, f) for f in os.listdir(dir)
-                 if f.startswith(self.bundle) and f.endswith('.json')]
+                 if f.startswith(file_prefix(self.bundle)) and
+                 f.endswith('.json')]
         try:
             files.remove(filename)
         except ValueError:

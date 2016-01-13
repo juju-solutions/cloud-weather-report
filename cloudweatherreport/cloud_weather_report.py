@@ -16,6 +16,8 @@ from cloudweatherreport.reporter import Reporter
 from utils import (
     configure_logging,
     create_bundle_yaml,
+    get_benchmark_data,
+    file_prefix,
     find_unit,
     get_provider_name,
     mkdir_p,
@@ -76,7 +78,7 @@ def run_bundle_test(args, env, test_plan=None):
     return test_result.getvalue(), status
 
 
-def run_actions(test_plan, client, env_status):
+def run_actions(test_plan, client, env_status, bundle_name=None):
     action_results = []
     for unit, actions in test_plan['benchmark'].items():
         actions = {actions: None} if isinstance(actions, str) else actions
@@ -95,9 +97,10 @@ def run_actions(test_plan, client, env_status):
 
 
 def get_filenames(bundle):
+    prefix = file_prefix(bundle)
     now = datetime.now().replace(microsecond=0).isoformat()
-    html_filename = "{}-{}-result.html".format(bundle, now)
-    json_filename = "{}-{}-result.json".format(bundle, now)
+    html_filename = "{}-{}-result.html".format(prefix, now)
+    json_filename = "{}-{}-result.json".format(prefix, now)
     result_dir = 'results'
     mkdir_p(result_dir)
     html_filename = os.path.join(result_dir, html_filename)
@@ -124,6 +127,8 @@ def main(args):
         test_plan = read_file(args.test_plan, 'yaml')
     results = []
     status = None
+    bundle = test_plan.get('bundle')
+    html_filename, json_filename = get_filenames(bundle)
     for env_name in args.controller:
         env = jujuclient.Environment.connect(env_name=env_name)
         env_info = env.info()
@@ -135,13 +140,16 @@ def main(args):
         action_results = []
         if test_plan.get('benchmark'):
             action_results = run_actions(test_plan, client, env.status())
+            all_values = get_benchmark_data(
+                file_prefix(bundle), os.path.dirname(json_filename),
+                provider_name)
+            value = action_results[0].values()[0]['value']
+            action_results[0].values()[0]['all_values'] = all_values + [value]
         results.append({
             "provider_name": provider_name,
             "test_results": json.loads(test_results) if test_results else None,
             "action_results": action_results,
             "info": env_info})
-    bundle = test_plan.get('bundle')
-    html_filename, json_filename = get_filenames(bundle)
     bundle_yaml = get_bundle_yaml(status)
     reporter = Reporter(bundle=bundle, results=results, options=args,
                         bundle_yaml=bundle_yaml)

@@ -14,7 +14,6 @@
 .result{
     background-color: #fff;
 }
-
 .textwrapper
 {
     width: 100%;
@@ -26,7 +25,6 @@
 .hide-it{
     display: none;
 }
-
 .test-result, .test-result:before, .test-result:after {
     padding: 0;
     border-radius: 12px;
@@ -49,6 +47,19 @@
     background-color:#ccc;
 }
 
+.last-result {
+    table-layout: fixed;
+}
+
+.last-result > tbody > tr > td {
+    border: none;
+    border-bottom: 1px dotted #ccc !important;
+}
+
+.last-result-box{
+    margin-top: 30px;
+}
+
 .history{
     table-layout: fixed;
     width: auto
@@ -65,16 +76,22 @@
 }
 
 .svg-img{
-    max-height: 400px;
-}
-
-.last-result {
-    height: 40px;
-    border: none;
-    border-bottom: 1px dotted #ccc !important;
+    max-height: 300px;
+    min-height: 200px;
 }
 
 .sparkline {
     width: 30px;
     height: 35px;
+}
+
+.chart{
+    min-width: 350px;
+    height: 400px;
+    margin: 0 auto;
+}
+
+.box{
+    padding-bottom: 5px;
+    border: none;
 }
