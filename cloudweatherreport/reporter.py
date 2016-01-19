@@ -41,6 +41,30 @@ class Reporter:
             json_content=json_content, output_file=html_filename,
             past_results=past_results)
 
+    def generate_chart_data(self, results):
+        title = ''
+        series = []
+        yaxis_tilte = ''
+        for test_result in results.get('results'):
+            data = []
+            benchmarks = test_result.get('benchmarks')
+            if benchmarks:
+                data = benchmarks[0].values()[0].get('all_values')
+                yaxis_tilte = benchmarks[0].values()[0].get('units')
+                title = benchmarks[0].keys()[0]
+            series.append(
+                {
+                    'name': test_result.get('provider_name'),
+                    'data':  map(int, data)
+                 }
+            )
+        chart = {
+            'title': title,
+            'yaxis_title': yaxis_tilte,
+            'series': series
+        }
+        return chart
+
     def generate_svg(self, filename):
         if not self.bundle_yaml:
             return None
@@ -62,6 +86,8 @@ class Reporter:
         env = Environment(loader=FileSystemLoader(searchpath='templates'))
         env.filters['humanize_date'] = humanize_date
         template = env.get_template('base.html')
+        #todo: alternative design
+        template2 = env.get_template('base_2.html')
         results = json.loads(json_content)
         svg_filename = "{}.svg".format(os.path.splitext(output_file)[0])
         svg_path = self.generate_svg(svg_filename)
@@ -69,11 +95,22 @@ class Reporter:
         history = self.get_by_provider(past_results) if past_results else None
         html_content = template.render(
             title=self.bundle, charm_name=self.bundle, results=results,
-            past_results=past_results, svg_path=svg, history=history,
+            past_results=past_results, svg_path=svg, history=history
             )
+        chart_data = self.generate_chart_data(results)
+        #todo alternative design
+        html_content_2 = template2.render(
+            title=self.bundle, charm_name=self.bundle, results=results,
+            past_results=past_results, svg_path=svg, history=history,
+            chart_data=json.dumps(chart_data)
+        )
         if output_file:
             with codecs.open(output_file, 'w', encoding='utf-8') as stream:
                 stream.write(html_content)
+            with codecs.open(
+                    output_file.replace(
+                        '.html', '_2.html'), 'w', encoding='utf-8') as stream:
+                stream.write(html_content_2)
         return html_content
 
     def _to_str(self, return_code):
@@ -150,7 +187,7 @@ class Reporter:
         for f in files:
             with codecs.open(f, 'r', encoding='utf-8') as fp:
                 results.append(json.load(fp))
-        results = sorted(results, key=lambda r: r["date"], reverse=True)
+        results = sorted(results, key=lambda r: r["date"])
         return results, files
 
     def get_by_provider(self, results):
@@ -169,3 +206,4 @@ class Reporter:
 def humanize_date(value, input_format=ISO_TIME_FORMAT):
     value = datetime.strptime(value, input_format)
     return value.strftime("%b %d, %Y at %H:%M")
+
