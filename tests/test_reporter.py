@@ -168,8 +168,8 @@ class TestReporter(TestCase):
                         "terasort": {
                             "units": "ms",
                             "direction": "asc",
-                            "all_values":
-                                [ "118192", "119187", "120954", "123466" ],
+                            "all_values": [
+                                "118192", "119187", "120954", "123466"],
                             "value": "123466"
                         }
                     }

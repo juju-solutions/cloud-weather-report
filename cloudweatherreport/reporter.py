@@ -56,7 +56,7 @@ class Reporter:
                 {
                     'name': test_result.get('provider_name'),
                     'data':  map(int, data)
-                 }
+                }
             )
         chart = {
             'title': title,
@@ -206,4 +206,3 @@ class Reporter:
 def humanize_date(value, input_format=ISO_TIME_FORMAT):
     value = datetime.strptime(value, input_format)
     return value.strftime("%b %d, %Y at %H:%M")
-
