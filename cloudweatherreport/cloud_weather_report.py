@@ -166,8 +166,12 @@ def file_open_with_app(filename):
         pass
 
 
-if __name__ == '__main__':
+def entry():
     args = parse_args()
     html_filename = main(args)
     print("Test result:\n  {}".format(html_filename))
     file_open_with_app(html_filename)
+
+
+if __name__ == '__main__':
+    entry()

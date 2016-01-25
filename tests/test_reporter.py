@@ -138,7 +138,6 @@ class TestReporter(TestCase):
             {
                 'provider_name': 'aws',
                 'info': {"name": "ec2"},
-                'action_results': [{'repo': '/tmp/a'}, {'users': 'the dude'}],
                 'test_results': {
                     'tests': [
                         {'returncode': 0,
@@ -164,7 +163,17 @@ class TestReporter(TestCase):
             {
                 'provider_name': 'joyent',
                 'info': {"name": "joyent"},
-                'action_results': [{'repo': '/tmp/a'}, {'users': 'the dude'}],
+                'action_results': [
+                    {
+                        "terasort": {
+                            "units": "ms",
+                            "direction": "asc",
+                            "all_values": [
+                                "118192", "119187", "120954", "123466"],
+                            "value": "123466"
+                        }
+                    }
+                ],
                 'test_results': {
                     'tests': [
                         {'returncode': 0,

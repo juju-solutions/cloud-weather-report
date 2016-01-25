@@ -1,0 +1,6 @@
+PyYAML>=3.11
+bundletester
+jujuclient
+Jinja2
+MarkupSafe
+mock
