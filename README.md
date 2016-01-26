@@ -19,7 +19,13 @@ Cloud Weather Report uses `make` and `unzip` during execution and `python-dev`
 
     pip install cwr
   
-  
+## Installing from a source
+    
+    curl -L -o cwr.zip https://github.com/juju-solutions/cloud-weather-report/archive/master.zip
+    unzip cwr.zip
+    cd cloud-weather-report-master
+    python setup.py install
+
 ## Usage
 
 After installing the Cloud Weather Report, you will have `cwr` command
@@ -37,7 +43,7 @@ Once `cwr` starts running, it deploys the bundle, runs the tests and benchmarks 
 are defined in the test plan. An example of the test plan is included in the
 `examples` directory. 
 
-## Running Bundles
+## Running bundles
 
 The following is example of a test plan to run the `apache-analytics-sql` bundle. It
 deploys `apache-analytics-sql` and runs `terasort` benchmarks.
@@ -58,7 +64,7 @@ The `runtime: 60` is a parameter passed to `perf`.
                 runtime: 60
 
 
-## Test and Benchmark Results
+## Result outputs
 
 Once the run is completed, the `cwr` generates a HTML file containing the test
 and benchmark results. The path to the HTML file will be displayed and will also 
