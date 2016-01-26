@@ -85,19 +85,19 @@ class Reporter:
     def generate_html(self, json_content, output_file=None, past_results=None):
         env = Environment(loader=FileSystemLoader(searchpath='templates'))
         env.filters['humanize_date'] = humanize_date
-        template = env.get_template('base.html')
+        template = env.get_template('base_2.html')
         #todo: alternative design
-        template2 = env.get_template('base_2.html')
+        template2 = env.get_template('base.html')
         results = json.loads(json_content)
         svg_filename = "{}.svg".format(os.path.splitext(output_file)[0])
         svg_path = self.generate_svg(svg_filename)
         svg = urllib.quote(os.path.basename(svg_path)) if svg_path else None
         history = self.get_by_provider(past_results) if past_results else None
+        chart_data = self.generate_chart_data(results)
         html_content = template.render(
             title=self.bundle, charm_name=self.bundle, results=results,
-            past_results=past_results, svg_path=svg, history=history
-            )
-        chart_data = self.generate_chart_data(results)
+            past_results=past_results, svg_path=svg, history=history,
+            chart_data=json.dumps(chart_data))
         #todo alternative design
         html_content_2 = template2.render(
             title=self.bundle, charm_name=self.bundle, results=results,
