@@ -1,0 +1,8 @@
+include Makefile
+include *.md
+include *.txt
+recursive-include cloudweatherreport *
+recursive-include examples *
+recursive-include templates *
+recursive-include static *
+

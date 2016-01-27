@@ -47,6 +47,7 @@ def install():
         description='Assess Juju charms and benchmarks on the clouds.',
         url='https://github.com/juju-solutions/cloud-weather-report',
         packages=setuptools.find_packages(),
+        include_package_data=True,
         entry_points={
             'console_scripts': [
                 'cwr = cloudweatherreport.cloud_weather_report:entry',
