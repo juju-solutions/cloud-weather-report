@@ -17,7 +17,7 @@ Cloud Weather Report uses `make` and `unzip` during execution and `python-dev`
 
 ## Installation
 
-    pip install cloud-weather-report
+    sudo pip install cloud-weather-report
   
 ## Installing from a source
     
