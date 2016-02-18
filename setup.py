@@ -12,15 +12,6 @@ import sys
 
 
 def check_tools():
-    try:
-        setuptools_version = float(setuptools.__version__)
-    except ValueError:
-        setuptools_version = 0
-    if setuptools_version < 17.1:
-        print("Error! 'setuptools' version 17.1 or higher is required. "
-              "Please update 'setuptools': maybe try "
-              "'easy_install --upgrade setuptools'")
-        return False
     with open(os.devnull, 'wb') as dev_null:
         for tool in ('unzip', 'make'):
             try:
@@ -42,7 +33,7 @@ def install():
         name='cloud-weather-report',
         author='Juju Developers',
         author_email='juju@lists.ubuntu.com',
-        version='0.1.0',
+        version='0.1.1',
         license='Affero GNU Public License v3',
         description='Assess Juju charms and benchmarks on the clouds.',
         url='https://github.com/juju-solutions/cloud-weather-report',
