@@ -33,7 +33,7 @@ def install():
         name='cloud-weather-report',
         author='Juju Developers',
         author_email='juju@lists.ubuntu.com',
-        version='0.1.1',
+        version='0.1.2',
         license='Affero GNU Public License v3',
         description='Assess Juju charms and benchmarks on the clouds.',
         url='https://github.com/juju-solutions/cloud-weather-report',
