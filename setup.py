@@ -37,11 +37,12 @@ def install():
         license='Affero GNU Public License v3',
         description='Assess Juju charms and benchmarks on the clouds.',
         url='https://github.com/juju-solutions/cloud-weather-report',
-        packages=setuptools.find_packages(),
+        zip_safe=False,
+        packages=['.', 'cloudweatherreport', 'static', 'templates'],
         include_package_data=True,
         entry_points={
             'console_scripts': [
-                'cwr = cloudweatherreport.cloud_weather_report:entry',
+                'cwr = run:entry',
             ]
         },
         install_requires=reqs)

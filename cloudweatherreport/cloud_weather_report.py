@@ -3,11 +3,11 @@ from __future__ import print_function
 import argparse
 from cStringIO import StringIO
 from datetime import datetime
+import errno
 import json
 import logging
 import os
-import subprocess
-import sys
+import shutil
 
 from bundletester import tester
 import jujuclient
@@ -103,6 +103,13 @@ def get_filenames(bundle):
     json_filename = "{}-{}-result.json".format(prefix, now)
     result_dir = 'results'
     mkdir_p(result_dir)
+    static_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    static_dir = os.path.join(static_dir, 'static')
+    try:
+        shutil.copytree(static_dir, os.path.join(result_dir, 'static'))
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
     html_filename = os.path.join(result_dir, html_filename)
     json_filename = os.path.join(result_dir, json_filename)
     return html_filename, json_filename
@@ -155,23 +162,3 @@ def main(args):
                         bundle_yaml=bundle_yaml)
     reporter.generate(html_filename=html_filename, json_filename=json_filename)
     return html_filename
-
-
-def file_open_with_app(filename):
-    opener = {'linux2': 'xdg-open', 'linux': 'xdg-open', 'darwin': 'open',
-              'win32': 'start'}
-    try:
-        subprocess.call([opener[sys.platform], filename])
-    except:
-        pass
-
-
-def entry():
-    args = parse_args()
-    html_filename = main(args)
-    print("Test result:\n  {}".format(html_filename))
-    file_open_with_app(html_filename)
-
-
-if __name__ == '__main__':
-    entry()

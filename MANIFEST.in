@@ -2,7 +2,6 @@ include Makefile
 include *.md
 include *.txt
 recursive-include cloudweatherreport *
-recursive-include examples *
-recursive-include templates *
-recursive-include static *
-
+recursive-include examples *.yaml
+recursive-include templates *.html
+recursive-include static *.css *.js *.svg

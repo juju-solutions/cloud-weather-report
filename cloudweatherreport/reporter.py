@@ -83,7 +83,9 @@ class Reporter:
         return svg_filename
 
     def generate_html(self, json_content, output_file=None, past_results=None):
-        env = Environment(loader=FileSystemLoader(searchpath='templates'))
+        pkg_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        templates = os.path.join(pkg_path, 'templates')
+        env = Environment(loader=FileSystemLoader(searchpath=templates))
         env.filters['humanize_date'] = humanize_date
         template = env.get_template('base_2.html')
         #todo: alternative design
