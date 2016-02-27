@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import os
+import re
 import subprocess
 import setuptools
 import sys
@@ -25,6 +26,9 @@ def check_tools():
 
 
 def install():
+    with open('cloudweatherreport/__init__.py', 'rb') as fp:
+        content = fp.read()
+        version = str(re.search(r'__version__\s+=\s+(.*)', content).group(1))
     current_dir = os.path.abspath(os.path.dirname(__file__))
     req_path = os.path.join(current_dir, 'requirements.txt')
     with open(req_path) as fp:
@@ -33,7 +37,7 @@ def install():
         name='cloud-weather-report',
         author='Juju Developers',
         author_email='juju@lists.ubuntu.com',
-        version='0.1.4',
+        version=version,  # Update version in cloudweatherreport/__init__.py
         license='Affero GNU Public License v3',
         description='Assess Juju charms and benchmarks on the clouds.',
         url='https://github.com/juju-solutions/cloud-weather-report',
