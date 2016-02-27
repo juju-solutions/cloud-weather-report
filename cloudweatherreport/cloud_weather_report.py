@@ -12,7 +12,7 @@ import shutil
 from bundletester import tester
 import jujuclient
 
-from cloudweatherreport.reporter import Reporter
+from reporter import Reporter
 from utils import (
     configure_logging,
     create_bundle_yaml,
@@ -103,7 +103,7 @@ def get_filenames(bundle):
     json_filename = "{}-{}-result.json".format(prefix, now)
     result_dir = 'results'
     mkdir_p(result_dir)
-    static_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    static_dir = os.path.dirname(os.path.abspath(__file__))
     static_dir = os.path.join(static_dir, 'static')
     try:
         shutil.copytree(static_dir, os.path.join(result_dir, 'static'))

@@ -2,11 +2,9 @@ from argparse import Namespace
 from collections import namedtuple
 import json
 import os
-from shutil import rmtree
 from StringIO import StringIO
 from tempfile import (
     NamedTemporaryFile,
-    mkdtemp,
 )
 from unittest import TestCase
 
@@ -17,9 +15,13 @@ from mock import (
 )
 import yaml
 
-from cloudweatherreport import cloud_weather_report
-from tests.common_test import setup_test_logging
+import cloud_weather_report
+from tests.common_test import (
+    setup_test_logging,
+    temp_cwd,
+)
 from tests.test_utils import make_fake_status
+from utils import temp_dir
 
 
 class TestCloudWeatherReport(TestCase):
@@ -58,9 +60,9 @@ class TestCloudWeatherReport(TestCase):
         test_plan = self.make_tst_plan()
         args = Namespace()
         with patch(
-                'cloudweatherreport.cloud_weather_report.StringIO',
+                'cloud_weather_report.StringIO',
                 autospec=True, return_value=io_output) as mock_ntf:
-            with patch('cloudweatherreport.cloud_weather_report.tester.main',
+            with patch('cloud_weather_report.tester.main',
                        autospec=True, side_effect=self.fake_tester_main
                        ) as mock_tm:
                 output, status = cloud_weather_report.run_bundle_test(
@@ -76,9 +78,9 @@ class TestCloudWeatherReport(TestCase):
         test_plan = None
         args = Namespace(testdir=None)
         with patch(
-                'cloudweatherreport.cloud_weather_report.StringIO',
+                'cloud_weather_report.StringIO',
                 autospec=True, return_value=io_output) as mock_ntf:
-            with patch('cloudweatherreport.cloud_weather_report.tester.main',
+            with patch('cloud_weather_report.tester.main',
                        autospec=True, side_effect=self.fake_tester_main
                        ) as mock_tm:
                 output, status = cloud_weather_report.run_bundle_test(
@@ -92,10 +94,10 @@ class TestCloudWeatherReport(TestCase):
     def test_main(self):
         status = self.make_status()
         run_bundle_test_p = patch(
-            'cloudweatherreport.cloud_weather_report.run_bundle_test',
+            'cloud_weather_report.run_bundle_test',
             autospec=True, return_value=(self.make_results(), status))
         juju_client_p = patch(
-            'cloudweatherreport.cloud_weather_report.jujuclient',
+            'cloud_weather_report.jujuclient',
             autospec=True)
         with NamedTemporaryFile() as html_output:
             with NamedTemporaryFile() as json_output:
@@ -107,7 +109,7 @@ class TestCloudWeatherReport(TestCase):
                                      testdir='git',
                                      verbose=False)
                     get_filenames_p = patch(
-                        'cloudweatherreport.cloud_weather_report.'
+                        'cloud_weather_report.'
                         'get_filenames', autospec=True, return_value=(
                             html_output.name, json_output.name))
                     with run_bundle_test_p as mock_rbt:
@@ -115,7 +117,8 @@ class TestCloudWeatherReport(TestCase):
                             with juju_client_p as mock_jc:
                                 (mock_jc.Environment.connect.return_value.
                                  info.return_value) = {"ProviderType": "ec2"}
-                                cloud_weather_report.main(args)
+                                with patch('cloud_weather_report.shutil'):
+                                        cloud_weather_report.main(args)
                 html_content = html_output.read()
                 json_content = json.loads(json_output.read())
             self.assertRegexpMatches(html_content, '<title>git</title>')
@@ -129,10 +132,10 @@ class TestCloudWeatherReport(TestCase):
     def test_main_multi_clouds(self):
         status = self.make_status()
         run_bundle_test_p = patch(
-            'cloudweatherreport.cloud_weather_report.run_bundle_test',
+            'cloud_weather_report.run_bundle_test',
             autospec=True, return_value=(self.make_results(), status))
         juju_client_p = patch(
-            'cloudweatherreport.cloud_weather_report.jujuclient',
+            'cloud_weather_report.jujuclient',
             autospec=True)
         with NamedTemporaryFile() as test_plan_file:
             with NamedTemporaryFile() as html_output:
@@ -144,7 +147,7 @@ class TestCloudWeatherReport(TestCase):
                                      testdir=None,
                                      verbose=False)
                     get_filenames_p = patch(
-                        'cloudweatherreport.cloud_weather_report.'
+                        'cloud_weather_report.'
                         'get_filenames', autospec=True, return_value=(
                             html_output.name, json_output.name))
                     with run_bundle_test_p as mock_rbt:
@@ -173,7 +176,7 @@ class TestCloudWeatherReport(TestCase):
             """
         test_plan = yaml.load(content)
         mock_client = MagicMock()
-        with patch('cloudweatherreport.cloud_weather_report.run_action',
+        with patch('cloud_weather_report.run_action',
                    autospec=True,
                    return_value=self.make_benchmark_data()) as mock_cr:
             result = cloud_weather_report.run_actions(
@@ -192,7 +195,7 @@ class TestCloudWeatherReport(TestCase):
             """
         test_plan = yaml.load(content)
         mock_client = MagicMock()
-        with patch('cloudweatherreport.cloud_weather_report.run_action',
+        with patch('cloud_weather_report.run_action',
                    autospec=True,
                    return_value=self.make_benchmark_data()) as mock_cr:
             result = cloud_weather_report.run_actions(
@@ -214,7 +217,7 @@ class TestCloudWeatherReport(TestCase):
         test_plan = yaml.load(content)
         mock_client = MagicMock()
         with patch(
-                'cloudweatherreport.cloud_weather_report.run_action',
+                'cloud_weather_report.run_action',
                 autospec=True,
                 side_effect=[self.make_benchmark_data(),
                              self.make_benchmark_data()]) as mock_cr:
@@ -240,7 +243,7 @@ class TestCloudWeatherReport(TestCase):
         test_plan = yaml.load(content)
         mock_client = MagicMock()
         with patch(
-                'cloudweatherreport.cloud_weather_report.run_action',
+                'cloud_weather_report.run_action',
                 autospec=True,
                 side_effect=[self.make_benchmark_data(),
                              self.make_benchmark_data()]) as mock_cr:
@@ -256,25 +259,33 @@ class TestCloudWeatherReport(TestCase):
             {"terasort2": self.make_benchmark_data()["meta"]["composite"]}])
 
     def test_get_filenames(self):
-        tempdir = mkdtemp()
-        h_file, j_file = cloud_weather_report.get_filenames('git')
-        rmtree(tempdir)
+        with temp_dir() as temp:
+            with temp_cwd(temp):
+                h_file, j_file = cloud_weather_report.get_filenames('git')
+            static_path = os.path.join(temp, 'results', 'static')
+            self.assertTrue(os.path.isdir(static_path))
+            self.assertTrue(os.path.isdir(os.path.join(static_path, 'css')))
+            self.assertTrue(os.path.isdir(os.path.join(static_path, 'images')))
+            self.assertTrue(os.path.isdir(os.path.join(static_path, 'js')))
         self.assertTrue(h_file.startswith('results/git-') and
                         h_file.endswith('.html'))
         self.assertTrue(j_file.startswith('results/git-') and
                         j_file.endswith('.json'))
 
     def test_get_filenames_url(self):
-        tempdir = mkdtemp()
-        h_file, j_file = cloud_weather_report.get_filenames(
-            'http://example.com/~git')
-        rmtree(tempdir)
+        with temp_dir() as temp:
+            with temp_cwd(temp):
+                h_file, j_file = cloud_weather_report.get_filenames(
+                    'http://example.com/~git')
         self.assertTrue(h_file.startswith(
             'results/http___example_com__git') and h_file.endswith('.html'))
         self.assertTrue(j_file.startswith(
             'results/http___example_com__git') and j_file.endswith('.json'))
-        h_file, j_file = cloud_weather_report.get_filenames(
-            'cs:~user/mysql-benchmark')
+
+        with temp_dir() as temp:
+            with temp_cwd(temp):
+                h_file, j_file = cloud_weather_report.get_filenames(
+                    'cs:~user/mysql-benchmark')
         self.assertTrue(j_file.startswith(
             'results/cs__user_mysql_benchmark') and j_file.endswith('.json'))
 

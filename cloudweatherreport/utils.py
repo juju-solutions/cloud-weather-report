@@ -1,4 +1,5 @@
 import codecs
+from contextlib import contextmanager
 from datetime import (
     datetime,
     timedelta,
@@ -7,6 +8,8 @@ import errno
 import json
 import logging
 import os
+from shutil import rmtree
+from tempfile import mkdtemp
 from time import sleep
 import yaml
 
@@ -156,3 +159,13 @@ def get_benchmark_data(file_prefix, dir_path, provider_name):
 
 def file_prefix(bundle_name):
     return "".join([c if c.isalnum() else "_" for c in bundle_name])
+
+
+@contextmanager
+def temp_dir(parent=None, keep=False):
+    directory = mkdtemp(dir=parent)
+    try:
+        yield directory
+    finally:
+        if not keep:
+            rmtree(directory)

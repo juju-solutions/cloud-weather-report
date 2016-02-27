@@ -11,7 +11,7 @@ from jinja2 import (
     FileSystemLoader,
 )
 
-from cloudweatherreport.utils import file_prefix
+from utils import file_prefix
 
 
 __metaclass__ = type
@@ -83,7 +83,7 @@ class Reporter:
         return svg_filename
 
     def generate_html(self, json_content, output_file=None, past_results=None):
-        pkg_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        pkg_path = os.path.dirname(os.path.abspath(__file__))
         templates = os.path.join(pkg_path, 'templates')
         env = Environment(loader=FileSystemLoader(searchpath=templates))
         env.filters['humanize_date'] = humanize_date

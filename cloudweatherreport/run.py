@@ -1,7 +1,7 @@
 import subprocess
 import sys
 
-from cloudweatherreport.cloud_weather_report import (
+from cloud_weather_report import (
     main,
     parse_args
 )

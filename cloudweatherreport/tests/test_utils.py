@@ -9,7 +9,7 @@ from unittest import TestCase
 
 import yaml
 
-from cloudweatherreport.utils import (
+from utils import (
     create_bundle_yaml,
     find_unit,
     get_all_test_results,

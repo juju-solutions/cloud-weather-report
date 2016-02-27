@@ -9,7 +9,7 @@ from unittest import TestCase
 
 from mock import patch
 
-from cloudweatherreport.reporter import Reporter
+from reporter import Reporter
 from tests.common_test import setup_test_logging
 
 __metaclass__ = type
@@ -75,7 +75,7 @@ class TestReporter(TestCase):
         fake_request = FakeRequest()
         reporter = Reporter(bundle='git', results=results, options=None,
                             bundle_yaml='bundle content')
-        with patch('cloudweatherreport.reporter.requests.post',
+        with patch('reporter.requests.post',
                    autospec=True, return_value=fake_request) as mock_r:
             reporter.generate(html_filename=html_file, json_filename=json_file)
         mock_r.assert_called_once_with('http://svg.juju.solutions',
@@ -122,7 +122,7 @@ class TestReporter(TestCase):
         svg_file = os.path.join(tempdir, 'foo')
         r = Reporter(None, None, None, bundle_yaml='foo')
         fake_request = FakeRequest()
-        with patch('cloudweatherreport.reporter.requests.post',
+        with patch('reporter.requests.post',
                    autospec=True, return_value=fake_request) as mock_r:
             svg = r.generate_svg(svg_file)
             svg_path = "{}.svg".format(svg_file)

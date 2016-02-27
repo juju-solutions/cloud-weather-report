@@ -33,16 +33,16 @@ def install():
         name='cloud-weather-report',
         author='Juju Developers',
         author_email='juju@lists.ubuntu.com',
-        version='0.1.3',
+        version='0.1.4',
         license='Affero GNU Public License v3',
         description='Assess Juju charms and benchmarks on the clouds.',
         url='https://github.com/juju-solutions/cloud-weather-report',
         zip_safe=False,
-        packages=['.', 'cloudweatherreport', 'static', 'templates'],
+        packages=setuptools.find_packages(),
         include_package_data=True,
         entry_points={
             'console_scripts': [
-                'cwr = run:entry',
+                'cwr = cloudweatherreport.run:entry',
             ]
         },
         install_requires=reqs)

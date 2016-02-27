@@ -1,6 +1,6 @@
 p=test*.py
 test:
-	TMPDIR=/tmp python -m unittest discover -vv ./tests -p "$(p)"
+	TMPDIR=/tmp python -m unittest discover -vv -t $(shell pwd) ./tests -p "$(p)"
 lint:
 	flake8 $$(find -name '*.py')
 cover:
