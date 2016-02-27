@@ -28,7 +28,7 @@ def check_tools():
 def install():
     with open('cloudweatherreport/__init__.py', 'rb') as fp:
         content = fp.read()
-        version = str(re.search(r'__version__\s+=\s+(.*)', content).group(1))
+    version = str(re.search(r'__version__\s+=\s+\'(.*)\'', content).group(1))
     current_dir = os.path.abspath(os.path.dirname(__file__))
     req_path = os.path.join(current_dir, 'requirements.txt')
     with open(req_path) as fp:
