@@ -38,6 +38,12 @@ controllers and the path to the test plan.
 For example if you already have bootstrapped `aws` and `gce` controllers:
 
     cwr aws gce test-plan.yaml
+    
+
+Note: `aws` and `gce` are the names of your Juju 1.25 environment (found in your environments.yaml) or the name of your Juju 2.0 controller (found in `juju list-controllers`). If you had named your environment or controller for AWS soemthing like `aws-west1` the CWR command would look like:
+
+    cwr aws-west1 test-plan.yaml
+
 
 Once `cwr` starts running, it deploys the bundle, runs the tests and benchmarks that
 are defined in the test plan. An example of the test plan is included in the
