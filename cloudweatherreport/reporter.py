@@ -70,12 +70,7 @@ class Reporter:
             return None
         filename, ext = os.path.splitext(filename)
         svg_filename = "{}.svg".format(filename)
-        try:
-            r = requests.post('http://svg.juju.solutions', self.bundle_yaml)
-        except:
-            logging.warn("Timeout exception from svg.juju.solution "
-                         "for \nbundle.yaml:\n{}".format(self.bundle_yaml),)
-            return None
+        r = requests.post('http://svg.juju.solutions', self.bundle_yaml)
         if r.status_code != requests.codes.ok:
             logging.warn("Could not generate svg. Response from "
                          "svg.juju.solutions: \n"
