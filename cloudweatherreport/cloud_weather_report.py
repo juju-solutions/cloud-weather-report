@@ -74,7 +74,10 @@ def run_bundle_test(args, env, test_plan=None):
     args.environment = env
     args.reporter = 'json'
     args.testdir = test_plan.get('bundle') if test_plan else args.testdir
-    status = tester.main(args)
+    try:
+        status = tester.main(args)
+    except Exception:
+        status = None
     return test_result.getvalue(), status
 
 
