@@ -81,7 +81,7 @@ def run_bundle_test(args, env, test_plan=None):
     args.testdir = test_plan.get('bundle') if test_plan else args.testdir
     try:
         status = tester.main(args)
-    except Exception as e:
+    except Exception:
         tb = traceback.format_exc()
         logging.error('Test failed in {} Exception:\n{}'.format(env, tb))
         return None, None
