@@ -18,6 +18,7 @@ from utils import (
     configure_logging,
     create_bundle_yaml,
     get_benchmark_data,
+    get_juju_major_version,
     file_prefix,
     find_unit,
     get_provider_name,
@@ -55,6 +56,8 @@ def bundle_tester_args(parser):
                         "override the one in the charm or bundle "
                         "being tested.")
     parser.add_argument('--test-pattern', dest="test_pattern")
+    parser.add_argument('--juju-major-version', type=int,
+                        default=get_juju_major_version())
     return parser
 
 
