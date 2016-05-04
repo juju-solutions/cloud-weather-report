@@ -68,6 +68,10 @@ def parse_args(argv=None):
 
 
 def run_bundle_test(args, env, test_plan=None):
+    """Run Bundletester and get the test results.
+
+    :return: test result and test status.
+    """
     test_result = StringIO()
     args.output = test_result
     args.tests = test_plan.get('tests') if test_plan else None
@@ -77,7 +81,7 @@ def run_bundle_test(args, env, test_plan=None):
     try:
         status = tester.main(args)
     except Exception:
-        status = None
+        return None, None
     return test_result.getvalue(), status
 
 
@@ -146,6 +150,8 @@ def main(args):
         logging.info('Running test on {}.'.format(provider_name))
         test_results, status = run_bundle_test(
             args=args, env=env_name, test_plan=test_plan)
+        if status is None and test_results is None:
+            continue
         client = jujuclient.Actions(env)
         action_results = []
         if test_plan.get('benchmark'):
