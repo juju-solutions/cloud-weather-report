@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import shutil
+import traceback
 
 from bundletester import tester
 import jujuclient
@@ -80,7 +81,9 @@ def run_bundle_test(args, env, test_plan=None):
     args.testdir = test_plan.get('bundle') if test_plan else args.testdir
     try:
         status = tester.main(args)
-    except Exception:
+    except Exception as e:
+        tb = traceback.format_exc()
+        logging.error('Test failed in {} Exception:\n{}'.format(env, tb))
         return None, None
     return test_result.getvalue(), status
 
