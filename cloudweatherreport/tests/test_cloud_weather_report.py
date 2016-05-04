@@ -30,14 +30,18 @@ class TestCloudWeatherReport(TestCase):
         setup_test_logging(self)
 
     def test_parse_args_defaults(self):
-        args = cloud_weather_report.parse_args(['aws', 'test_plan'])
+        with patch(
+            'cloud_weather_report.get_juju_major_version', autospec=True,
+                return_value=1) as gjmv_mock:
+            args = cloud_weather_report.parse_args(['aws', 'test_plan'])
         expected = Namespace(
             bundle=None, controller=['aws'], deployment=None, dryrun=False,
-            exclude=None, failfast=True, log_level='INFO',
-            no_destroy=False, result_output='result.html',
+            exclude=None, failfast=True, juju_major_version=1,
+            log_level='INFO', no_destroy=False, result_output='result.html',
             skip_implicit=False, test_pattern=None, test_plan='test_plan',
             testdir=os.getcwd(), tests_yaml=None, verbose=False)
         self.assertEqual(args, expected)
+        gjmv_mock.assert_called_once_with()
 
     def test_parse_args_set_all_options(self):
         args = cloud_weather_report.parse_args(
@@ -46,13 +50,14 @@ class TestCloudWeatherReport(TestCase):
              '--deployment', 'depl', '--no-destroy', '--log-level', 'debug',
              '--dry-run', '--verbose', '--allow-failure', '--skip-implicit',
              '--exclude', 'skip_test', '--tests-yaml', 'test_yaml_file',
-             '--test-pattern', 'tp'])
+             '--test-pattern', 'tp', '--juju-major-version', '2'])
         expected = Namespace(
             bundle='foo-bundle', controller=['aws', 'gce'], deployment='depl',
             dryrun=True, exclude=['skip_test'], failfast=False,
-            log_level='debug', no_destroy=True, result_output='result',
-            skip_implicit=True, test_pattern='tp', test_plan='test_plan',
-            testdir='/test/dir', tests_yaml='test_yaml_file', verbose=True)
+            juju_major_version=2, log_level='debug', no_destroy=True,
+            result_output='result', skip_implicit=True, test_pattern='tp',
+            test_plan='test_plan', testdir='/test/dir',
+            tests_yaml='test_yaml_file', verbose=True)
         self.assertEqual(args, expected)
 
     def test_run_bundle_test(self):

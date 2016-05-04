@@ -9,6 +9,7 @@ import json
 import logging
 import os
 from shutil import rmtree
+import subprocess
 from tempfile import mkdtemp
 from time import sleep
 import yaml
@@ -169,3 +170,7 @@ def temp_dir(parent=None, keep=False):
     finally:
         if not keep:
             rmtree(directory)
+
+
+def get_juju_major_version():
+    return int(subprocess.check_output(["juju", "version"]).split(b'.')[0])
