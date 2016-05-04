@@ -91,6 +91,25 @@ class TestCloudWeatherReport(TestCase):
         mock_tm.assert_called_once_with(call)
         mock_ntf.assert_called_once_with()
 
+    def test_run_bundle_test_exception(self):
+        io_output = StringIO()
+        test_plan = self.make_tst_plan()
+        args = Namespace()
+        with patch(
+                'cloud_weather_report.StringIO',
+                autospec=True, return_value=io_output) as mock_ntf:
+            with patch('cloud_weather_report.tester.main',
+                       autospec=True, side_effect=Exception
+                       ) as mock_tm:
+                output, status = cloud_weather_report.run_bundle_test(
+                    args, 'foo', test_plan)
+        self.assertEqual(output, None)
+        self.assertEqual(status, None)
+        call = Namespace(environment='foo', output=io_output, reporter='json',
+                         testdir='git', tests=['test1', 'test2'])
+        mock_tm.assert_called_once_with(call)
+        mock_ntf.assert_called_once_with()
+
     def test_main(self):
         status = self.make_status()
         run_bundle_test_p = patch(
