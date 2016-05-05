@@ -146,9 +146,9 @@ def main(args):
     if args.test_plan:
         test_plan = read_file(args.test_plan, 'yaml')
     results = []
-    status = None
     bundle = test_plan.get('bundle')
     html_filename, json_filename = get_filenames(bundle)
+    last_successful_status = None
     for env_name in args.controller:
         env = jujuclient.Environment.connect(env_name=env_name)
         env_info = env.info()
@@ -158,6 +158,8 @@ def main(args):
             args=args, env=env_name, test_plan=test_plan)
         if status is None and test_results is None:
             continue
+        else:
+            last_successful_status = status
         client = jujuclient.Actions(env)
         action_results = []
         if test_plan.get('benchmark'):
@@ -172,7 +174,7 @@ def main(args):
             "test_results": json.loads(test_results) if test_results else None,
             "action_results": action_results,
             "info": env_info})
-    bundle_yaml = get_bundle_yaml(status)
+    bundle_yaml = get_bundle_yaml(last_successful_status)
     reporter = Reporter(bundle=bundle, results=results, options=args,
                         bundle_yaml=bundle_yaml)
     reporter.generate(html_filename=html_filename, json_filename=json_filename)
