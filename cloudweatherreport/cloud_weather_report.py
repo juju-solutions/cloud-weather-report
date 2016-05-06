@@ -101,7 +101,13 @@ def run_actions(test_plan, client, env_status, bundle_name=None):
             real_unit = find_unit(unit, env_status)
             if not real_unit:
                 raise Exception("unit not found: {}".format(unit))
-            result = run_action(client, real_unit, action, action_param=params)
+            try:
+                result = run_action(
+                    client, real_unit, action, action_param=params,
+                    timeout=3600)
+            except Exception as e:
+                logging.error('Action run failed: {}'.format(str(e)))
+                continue
             composite = result.get('meta', {}).get('composite')
             if composite:
                 action_results.append({action: composite})

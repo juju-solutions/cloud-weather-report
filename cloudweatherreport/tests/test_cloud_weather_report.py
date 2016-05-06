@@ -206,7 +206,8 @@ class TestCloudWeatherReport(TestCase):
             result = cloud_weather_report.run_actions(
                 test_plan, mock_client, make_fake_status())
         calls = [call(mock_client, 'plugin/6', 'terasort',
-                      action_param={"time": "30s", "concurrency": 10})]
+                      action_param={"time": "30s", "concurrency": 10},
+                      timeout=3600)]
         self.assertEqual(mock_cr.mock_calls, calls)
         self.assertEqual(result, [
             {"terasort": self.make_benchmark_data()["meta"]["composite"]}])
@@ -224,7 +225,8 @@ class TestCloudWeatherReport(TestCase):
                    return_value=self.make_benchmark_data()) as mock_cr:
             result = cloud_weather_report.run_actions(
                 test_plan, mock_client, make_fake_status())
-        calls = [call(mock_client, 'plugin/7', 'terasort', action_param=None)]
+        calls = [call(mock_client, 'plugin/7', 'terasort', action_param=None,
+                      timeout=3600)]
         self.assertEqual(mock_cr.mock_calls, calls)
         self.assertEqual(result, [
             {"terasort": self.make_benchmark_data()["meta"]["composite"]}])
@@ -248,8 +250,9 @@ class TestCloudWeatherReport(TestCase):
             result = cloud_weather_report.run_actions(
                 test_plan, mock_client, make_fake_status())
         calls = [call(mock_client, 'plugin/6', 'terasort',
-                      action_param={"time": "30s"}),
-                 call(mock_client, 'plugin/7', 'terasort', action_param=None)]
+                      action_param={"time": "30s"}, timeout=3600),
+                 call(mock_client, 'plugin/7', 'terasort', action_param=None,
+                      timeout=3600)]
         self.assertItemsEqual(mock_cr.mock_calls, calls)
         self.assertEqual(result, [
             {'terasort': self.make_benchmark_data()["meta"]["composite"]},
@@ -274,9 +277,9 @@ class TestCloudWeatherReport(TestCase):
             result = cloud_weather_report.run_actions(
                 test_plan, mock_client, make_fake_status())
         calls = [call(mock_client, 'plugin/6', 'terasort',
-                      action_param={"time": "30s"}),
+                      action_param={"time": "30s"}, timeout=3600),
                  call(mock_client, 'plugin/7', 'terasort2',
-                      action_param=None)]
+                      action_param=None, timeout=3600)]
         self.assertItemsEqual(mock_cr.mock_calls, calls)
         self.assertEqual(result, [
             {"terasort": self.make_benchmark_data()["meta"]["composite"]},

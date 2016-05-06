@@ -28,6 +28,7 @@ def run_action(client, unit, action, action_param=None, timeout=-1):
     logging.debug(
         'Action run - unit: {} action:{} param:{} timeout: {}'.format(
             unit, action, action_param, timeout))
+    action_param = action_param or {}
     pending_action = client.enqueue_units(unit, action, action_param)
     if pending_action['results'][0].get('error'):
         raise Exception('Action failed {}'.format(
