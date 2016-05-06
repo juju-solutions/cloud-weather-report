@@ -170,11 +170,13 @@ def main(args):
         action_results = []
         if test_plan.get('benchmark'):
             action_results = run_actions(test_plan, client, env.status())
-            all_values = get_benchmark_data(
-                file_prefix(bundle), os.path.dirname(json_filename),
-                provider_name)
-            value = action_results[0].values()[0]['value']
-            action_results[0].values()[0]['all_values'] = all_values + [value]
+            if action_results:
+                all_values = get_benchmark_data(
+                    file_prefix(bundle), os.path.dirname(json_filename),
+                    provider_name)
+                value = action_results[0].values()[0]['value']
+                action_results[0].values()[0]['all_values'] = (
+                    all_values + [value])
         results.append({
             "provider_name": provider_name,
             "test_results": json.loads(test_results) if test_results else None,
