@@ -43,6 +43,7 @@ def wait_for_action_complete(action, tag, timeout=-1, pause_time=.1):
     """Wait for action to complete. Use -1 to wait indefinitely."""
     time_limit = datetime.now() + timedelta(seconds=timeout)
     not_expired = True if timeout == -1 else datetime.now() < time_limit
+    result = None
     while not_expired:
         result = action.info([{'Tag': tag}])
         if result['results'][0].get('error'):
@@ -51,6 +52,8 @@ def wait_for_action_complete(action, tag, timeout=-1, pause_time=.1):
             return result
         sleep(pause_time)
         not_expired = True if timeout == -1 else datetime.now() < time_limit
+    logging.debug('Action timeout:\nAction: {} \nTag: {} \nResult: {}'.format(
+        action, tag, result))
     raise Exception('Timed out waiting for action to complete.')
 
 
