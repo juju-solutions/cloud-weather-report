@@ -50,6 +50,8 @@ def wait_for_action_complete(action, tag, timeout=-1, pause_time=.1):
             raise ValueError(result['results'][0].get('error'))
         if result['results'][0].get('status') == 'completed':
             return result
+        if result['results'][0].get('status') == 'failed':
+            raise Exception('Action failed. Result: {}'.format(result))
         sleep(pause_time)
         not_expired = True if timeout == -1 else datetime.now() < time_limit
     logging.debug('Action timeout:\nAction: {} \nTag: {} \nResult: {}'.format(
