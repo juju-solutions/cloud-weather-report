@@ -257,6 +257,17 @@ class TestReporter(TestCase):
                         "DefaultSeries": "trusty",
                         "Name": "joyent"
                     }
+                },
+                {
+                    "provider_name": "GCE",
+                    "test_outcome": "No Results",
+                    "info": {
+                        "ServerUUID": "0caecc18-b694-4e4c-81e7-a0551bcb7258",
+                        "ProviderType": "gce",
+                        "UUID": "0caecc18-b694-4e4c-81e7-a0551bcb7258",
+                        "DefaultSeries": "trusty",
+                        "Name": "gce"
+                    }
                 }
             ],
             "bundle": {
