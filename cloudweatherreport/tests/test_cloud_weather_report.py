@@ -62,7 +62,7 @@ class TestCloudWeatherReport(TestCase):
 
     def test_run_bundle_test(self):
         io_output = StringIO()
-        test_plan = self.make_tst_plan()
+        test_plan = make_tst_plan()
         args = Namespace()
         with patch(
                 'cloud_weather_report.StringIO',
@@ -98,7 +98,7 @@ class TestCloudWeatherReport(TestCase):
 
     def test_run_bundle_test_exception(self):
         io_output = StringIO()
-        test_plan = self.make_tst_plan()
+        test_plan = make_tst_plan()
         args = Namespace()
         with patch(
                 'cloud_weather_report.StringIO',
@@ -126,7 +126,7 @@ class TestCloudWeatherReport(TestCase):
         with NamedTemporaryFile() as html_output:
             with NamedTemporaryFile() as json_output:
                 with NamedTemporaryFile() as test_plan_file:
-                    test_plan = self.make_tst_plan_file(test_plan_file.name)
+                    test_plan = make_tst_plan_file(test_plan_file.name)
                     args = Namespace(controller=['aws'],
                                      result_output=html_output.name,
                                      test_plan=test_plan_file.name,
@@ -142,7 +142,8 @@ class TestCloudWeatherReport(TestCase):
                                 (mock_jc.Environment.connect.return_value.
                                  info.return_value) = {"ProviderType": "ec2"}
                                 with patch('cloud_weather_report.shutil'):
-                                        cloud_weather_report.main(args)
+                                        cloud_weather_report.main(
+                                            args, test_plan)
                 html_content = html_output.read()
                 json_content = json.loads(json_output.read())
             self.assertRegexpMatches(html_content, '<title>git</title>')
@@ -164,7 +165,7 @@ class TestCloudWeatherReport(TestCase):
         with NamedTemporaryFile() as test_plan_file:
             with NamedTemporaryFile() as html_output:
                 with NamedTemporaryFile() as json_output:
-                    test_plan = self.make_tst_plan_file(test_plan_file.name)
+                    test_plan = make_tst_plan_file(test_plan_file.name)
                     args = Namespace(controller=['aws', 'gce'],
                                      result_output="result.html",
                                      test_plan=test_plan_file.name,
@@ -179,7 +180,7 @@ class TestCloudWeatherReport(TestCase):
                             with juju_client_p as mock_jc:
                                 (mock_jc.Environment.connect.return_value.
                                  info.return_value) = {"ProviderType": "ec2"}
-                                cloud_weather_report.main(args)
+                                cloud_weather_report.main(args, test_plan)
                     json_content = json.loads(json_output.read())
         calls = [call(args=args, env='aws', test_plan=test_plan),
                  call(args=args, env='gce', test_plan=test_plan)]
@@ -319,16 +320,6 @@ class TestCloudWeatherReport(TestCase):
     def fake_tester_main(self, args):
         args.output.write('test passed'), 0
 
-    def make_tst_plan_file(self, filename):
-        test_plan = self.make_tst_plan()
-        content = yaml.dump(test_plan)
-        with open(filename, 'w') as yaml_file:
-            yaml_file.write(content)
-        return yaml.load(content)
-
-    def make_tst_plan(self):
-        return {'tests': ['test1', 'test2'], 'bundle': 'git'}
-
     def make_results(self):
         return json.dumps(
             {
@@ -377,3 +368,21 @@ class TestCloudWeatherReport(TestCase):
                 "siege": {"Units": {"siege/0": "foo"}},
                 "mongodb": {"Units": {"mongodb/0": "foo"}}}
         }
+
+
+def make_tst_plan_file(filename, multi_test_plans=False):
+    test_plan = make_tst_plan(multi_test_plans)
+    content = yaml.dump(test_plan)
+    with open(filename, 'w') as yaml_file:
+        yaml_file.write(content)
+    return yaml.load(content)
+
+
+def make_tst_plan(multi_test_plans=False):
+    p = [
+        {'tests': ['test1', 'test2'], 'bundle': 'git'},
+        {'tests': ['test1'], 'bundle': 'mongodb'},
+    ]
+    if multi_test_plans:
+        return p
+    return p[0]
