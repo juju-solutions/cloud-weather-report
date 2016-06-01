@@ -144,6 +144,28 @@ def get_bundle_yaml(status):
     return None
 
 
+def run_benchmark(test_plan, bundle, output_filename, provider_name, env):
+    """Run benchmarks and get the results."""
+    client = jujuclient.Actions(env)
+    action_results = run_actions(test_plan, client, env.status())
+    if action_results:
+        all_values = get_benchmark_data(
+            file_prefix(bundle), os.path.dirname(output_filename),
+            provider_name)
+        value = action_results[0].values()[0]['value']
+        action_results[0].values()[0]['all_values'] = all_values + [value]
+        return action_results
+
+
+def generate_report(bundle, results, options, status, html_filename,
+                    json_filename):
+    bundle_yaml = get_bundle_yaml(status)
+    reporter = Reporter(bundle=bundle, results=results, options=options,
+                        bundle_yaml=bundle_yaml)
+    reporter.generate(html_filename=html_filename,
+                      json_filename=json_filename)
+
+
 def main(args):
     log_level = logging.DEBUG if args.verbose else logging.INFO
     configure_logging(log_level)
@@ -164,26 +186,18 @@ def main(args):
             args=args, env=env_name, test_plan=test_plan)
         if status is None and test_results is None:
             continue
-        else:
-            last_successful_status = status
-        client = jujuclient.Actions(env)
-        action_results = []
+        last_successful_status = status
+        benchmark_results = []
         if test_plan.get('benchmark'):
-            action_results = run_actions(test_plan, client, env.status())
-            if action_results:
-                all_values = get_benchmark_data(
-                    file_prefix(bundle), os.path.dirname(json_filename),
-                    provider_name)
-                value = action_results[0].values()[0]['value']
-                action_results[0].values()[0]['all_values'] = (
-                    all_values + [value])
+            benchmark_results = run_benchmark(
+                test_plan, bundle, json_filename, provider_name, env)
         results.append({
             "provider_name": provider_name,
             "test_results": json.loads(test_results) if test_results else None,
-            "action_results": action_results,
+            "action_results": benchmark_results,
             "info": env_info})
-    bundle_yaml = get_bundle_yaml(last_successful_status)
-    reporter = Reporter(bundle=bundle, results=results, options=args,
-                        bundle_yaml=bundle_yaml)
-    reporter.generate(html_filename=html_filename, json_filename=json_filename)
+    generate_report(
+        bundle=bundle, results=results, options=args,
+        status=last_successful_status, html_filename=html_filename,
+        json_filename=json_filename)
     return html_filename
