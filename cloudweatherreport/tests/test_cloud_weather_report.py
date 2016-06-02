@@ -21,7 +21,10 @@ from tests.common_test import (
     temp_cwd,
 )
 from tests.test_utils import make_fake_status
-from utils import temp_dir
+from utils import (
+    generate_test_result,
+    temp_dir,
+)
 
 
 class TestCloudWeatherReport(TestCase):
@@ -100,20 +103,26 @@ class TestCloudWeatherReport(TestCase):
         io_output = StringIO()
         test_plan = make_tst_plan()
         args = Namespace()
+        exc = 'File /path/ raise exception'
         with patch(
                 'cloud_weather_report.StringIO',
                 autospec=True, return_value=io_output) as mock_ntf:
             with patch('cloud_weather_report.tester.main',
                        autospec=True, side_effect=Exception
                        ) as mock_tm:
-                output, status = cloud_weather_report.run_bundle_test(
-                    args, 'foo', test_plan)
-        self.assertEqual(output, None)
+                with patch('traceback.format_exc', return_value=exc) as mock_f:
+                    output, status = cloud_weather_report.run_bundle_test(
+                        args, 'foo', test_plan)
+        expected_result = generate_test_result(
+            'Exception (foo):\nFile /path/ raise exception')
+        self.assertEqual(output, expected_result)
         self.assertEqual(status, None)
-        call = Namespace(environment='foo', output=io_output, reporter='json',
-                         testdir='git', tests=['test1', 'test2'])
-        mock_tm.assert_called_once_with(call)
+        main_call = Namespace(
+            environment='foo', output=io_output, reporter='json',
+            testdir='git', tests=['test1', 'test2'])
+        mock_tm.assert_called_once_with(main_call)
         mock_ntf.assert_called_once_with()
+        mock_f.assert_called_once_with()
 
     def test_main(self):
         status = self.make_status()

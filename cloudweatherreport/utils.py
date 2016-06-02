@@ -180,3 +180,19 @@ def temp_dir(parent=None, keep=False):
 
 def get_juju_major_version():
     return int(subprocess.check_output(["juju", "version"]).split(b'.')[0])
+
+
+def generate_test_result(output, test='Exception', returncode=1, duration=0,
+                         suite=''):
+    results = {
+        'tests': [
+            {
+                'test': test,
+                'returncode': returncode,
+                'duration': duration,
+                'output': output,
+                'suite':  suite,
+            }
+        ]
+    }
+    return json.dumps(results)
