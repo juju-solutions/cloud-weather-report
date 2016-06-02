@@ -23,7 +23,6 @@ from utils import (
     find_unit,
     get_provider_name,
     mkdir_p,
-    read_file,
     run_action,
 )
 
@@ -166,17 +165,16 @@ def generate_report(bundle, results, options, status, html_filename,
                       json_filename=json_filename)
 
 
-def main(args):
+def main(args, test_plan):
     log_level = logging.DEBUG if args.verbose else logging.INFO
     configure_logging(log_level)
     logging.info('Cloud Weather Report started.')
-    test_plan = None
-    if args.test_plan:
-        test_plan = read_file(args.test_plan, 'yaml')
     results = []
     bundle = test_plan.get('bundle')
+    args.bundle = test_plan.get('bundle_file')
     html_filename, json_filename = get_filenames(bundle)
     last_successful_status = None
+
     for env_name in args.controller:
         env = jujuclient.Environment.connect(env_name=env_name)
         env_info = env.info()
@@ -196,6 +194,7 @@ def main(args):
             "test_results": json.loads(test_results) if test_results else None,
             "action_results": benchmark_results,
             "info": env_info})
+
     generate_report(
         bundle=bundle, results=results, options=args,
         status=last_successful_status, html_filename=html_filename,
