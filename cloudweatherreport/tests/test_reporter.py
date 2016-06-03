@@ -169,7 +169,7 @@ class TestReporter(TestCase):
                             "units": "ms",
                             "direction": "asc",
                             "all_values": [
-                                "118192", "119187", "120954", "123466"],
+                                "118192.01", "119187", "120954", "123466"],
                             "value": "123466"
                         }
                     }
