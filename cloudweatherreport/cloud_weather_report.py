@@ -17,6 +17,7 @@ from reporter import Reporter
 from utils import (
     configure_logging,
     create_bundle_yaml,
+    generate_test_result,
     get_benchmark_data,
     get_juju_major_version,
     file_prefix,
@@ -85,8 +86,10 @@ def run_bundle_test(args, env, test_plan=None):
         status = tester.main(args)
     except Exception:
         tb = traceback.format_exc()
-        logging.error('Test failed in {} Exception:\n{}'.format(env, tb))
-        return None, None
+        error = "Exception ({}):\n{}".format(env, tb)
+        logging.error(error)
+        test_result = generate_test_result(error)
+        return test_result, None
     return test_result.getvalue(), status
 
 

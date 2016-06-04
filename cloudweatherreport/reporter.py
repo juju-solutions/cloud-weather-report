@@ -55,7 +55,7 @@ class Reporter:
             series.append(
                 {
                     'name': test_result.get('provider_name'),
-                    'data':  map(int, data)
+                    'data':  map(float, data)
                 }
             )
         chart = {
