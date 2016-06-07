@@ -129,9 +129,7 @@ class TestCloudWeatherReport(TestCase):
         run_bundle_test_p = patch(
             'cloud_weather_report.run_bundle_test',
             autospec=True, return_value=(self.make_results(), status))
-        juju_client_p = patch(
-            'cloud_weather_report.jujuclient',
-            autospec=True)
+        juju_client_p = patch('utils.jujuclient', autospec=True)
         with NamedTemporaryFile() as html_output:
             with NamedTemporaryFile() as json_output:
                 with NamedTemporaryFile() as test_plan_file:
@@ -168,9 +166,7 @@ class TestCloudWeatherReport(TestCase):
         run_bundle_test_p = patch(
             'cloud_weather_report.run_bundle_test',
             autospec=True, return_value=(self.make_results(), status))
-        juju_client_p = patch(
-            'cloud_weather_report.jujuclient',
-            autospec=True)
+        juju_client_p = patch('utils.jujuclient', autospec=True)
         with NamedTemporaryFile() as test_plan_file:
             with NamedTemporaryFile() as html_output:
                 with NamedTemporaryFile() as json_output:

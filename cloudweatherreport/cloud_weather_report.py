@@ -16,6 +16,7 @@ import jujuclient
 from reporter import Reporter
 from utils import (
     configure_logging,
+    connect_juju_client,
     create_bundle_yaml,
     generate_test_result,
     get_benchmark_data,
@@ -157,6 +158,7 @@ def run_benchmark(test_plan, bundle, output_filename, provider_name, env):
         value = action_results[0].values()[0]['value']
         action_results[0].values()[0]['all_values'] = all_values + [value]
         return action_results
+    return []
 
 
 def generate_report(bundle, results, options, status, html_filename,
@@ -179,7 +181,11 @@ def main(args, test_plan):
     last_successful_status = None
 
     for env_name in args.controller:
-        env = jujuclient.Environment.connect(env_name=env_name)
+        env = connect_juju_client(env_name, logging=logging)
+        if not env:
+            logging.error("Jujuclient could not connect to {} ".format(
+                env_name))
+            continue
         env_info = env.info()
         provider_name = get_provider_name(env_info["ProviderType"])
         logging.info('Running test on {}.'.format(provider_name))
