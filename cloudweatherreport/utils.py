@@ -9,10 +9,14 @@ import json
 import logging
 import os
 from shutil import rmtree
+import socket
 import subprocess
 from tempfile import mkdtemp
 from time import sleep
+import traceback
 import yaml
+
+import jujuclient
 
 
 def read_file(file_path, file_type=None):
@@ -196,3 +200,23 @@ def generate_test_result(output, test='Exception', returncode=1, duration=0,
         ]
     }
     return json.dumps(results)
+
+
+def connect_juju_client(env_name, retries=3, logging=None):
+    """Connect to jujuclient."""
+    env = None
+    for _ in xrange(retries):
+        try:
+            env = jujuclient.Environment.connect(env_name=env_name)
+            break
+        except socket.timeout:
+            if logging:
+                tb = traceback.format_exc()
+                logging.error('Jujuclient exception: {}'.format(tb))
+            continue
+        except Exception:
+            if logging:
+                tb = traceback.format_exc()
+                logging.error('Jujuclient exception: {}'.format(tb))
+            break
+    return env

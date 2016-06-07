@@ -1,15 +1,18 @@
 import json
 import os
 from shutil import rmtree
+import socket
 from tempfile import (
     NamedTemporaryFile,
     mkdtemp,
 )
 from unittest import TestCase
 
+from mock import call, patch
 import yaml
 
 from utils import (
+    connect_juju_client,
     create_bundle_yaml,
     find_unit,
     get_all_test_results,
@@ -168,6 +171,29 @@ class TestUtil(TestCase):
         values = get_benchmark_data('cs:git', temp, 'GCE')
         self.assertItemsEqual(values, [])
         rmtree(temp)
+
+    def test_connect_juju_client(self):
+        with patch('utils.jujuclient', autospec=True) as jc_mock:
+            jc_mock.Environment.connect.return_value = 'bar'
+            env = connect_juju_client('foo')
+        jc_mock.Environment.connect.assert_called_once_with(env_name='foo')
+        self.assertEqual(env, 'bar')
+
+    def test_connect_juju_client_exception(self):
+        with patch('utils.jujuclient', autospec=True) as jc_mock:
+            jc_mock.Environment.connect.side_effect = Exception
+            env = connect_juju_client('foo')
+        jc_mock.Environment.connect.assert_called_once_with(env_name='foo')
+        self.assertEqual(env, None)
+
+    def test_connect_juju_client_socket_timeout(self):
+        with patch('utils.jujuclient', autospec=True) as jc_mock:
+            jc_mock.Environment.connect.side_effect = socket.timeout
+            env = connect_juju_client('foo')
+        self.assertEqual(jc_mock.Environment.connect.mock_calls,
+                         [call(env_name='foo'), call(env_name='foo'),
+                          call(env_name='foo')])
+        self.assertEqual(env, None)
 
 
 def get_bundle_yaml():
