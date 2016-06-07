@@ -195,7 +195,7 @@ def main(args, test_plan):
             continue
         last_successful_status = status
         benchmark_results = []
-        if test_plan.get('benchmark'):
+        if status is not None and test_plan.get('benchmark'):
             benchmark_results = run_benchmark(
                 test_plan, bundle, json_filename, provider_name, env)
         results.append({
