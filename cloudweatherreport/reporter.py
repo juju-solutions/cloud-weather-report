@@ -92,9 +92,7 @@ class Reporter:
         templates = os.path.join(pkg_path, 'templates')
         env = Environment(loader=FileSystemLoader(searchpath=templates))
         env.filters['humanize_date'] = humanize_date
-        template = env.get_template('base_2.html')
-        #todo: alternative design
-        template2 = env.get_template('base.html')
+        template = env.get_template('base.html')
         results = json.loads(json_content)
         svg_filename = "{}.svg".format(os.path.splitext(output_file)[0])
         svg_path = self.generate_svg(svg_filename)
@@ -105,19 +103,9 @@ class Reporter:
             title=self.bundle, charm_name=self.bundle, results=results,
             past_results=past_results, svg_path=svg, history=history,
             chart_data=json.dumps(chart_data))
-        #todo alternative design
-        html_content_2 = template2.render(
-            title=self.bundle, charm_name=self.bundle, results=results,
-            past_results=past_results, svg_path=svg, history=history,
-            chart_data=json.dumps(chart_data)
-        )
         if output_file:
             with codecs.open(output_file, 'w', encoding='utf-8') as stream:
                 stream.write(html_content)
-            with codecs.open(
-                    output_file.replace(
-                        '.html', '_2.html'), 'w', encoding='utf-8') as stream:
-                stream.write(html_content_2)
         return html_content
 
     def _to_str(self, return_code):
