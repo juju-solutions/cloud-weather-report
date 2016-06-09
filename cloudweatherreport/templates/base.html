@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <title>{{ title }}</title>
     <link rel="stylesheet" type="text/css" media="screen" href="static/css/ubuntu-styles.css">
-    <link rel="stylesheet" type="text/css" href="static/css/base.css">
+    <link rel="stylesheet" type="text/css" href="static/css/base2.css">
     <script type='text/javascript' src='static/js/jquery.min.js'></script>
+    <script type='text/javascript' src='static/js/highcharts.js'></script>
     <script type="text/javascript">
         function hide_rows(name) {
             name = '.' + name;
@@ -16,6 +17,55 @@
             name = '.' + name;
             $(name).toggle();
             return false;
+        }
+        function display_chart (chart_data) {
+            chart_data = JSON.parse(chart_data);
+            h_charts = {
+                 chart: {
+                     renderTo: 'containter',
+                     borderLeftWidth: 1,
+                     borderColor: '#eee',
+                     backgroundColor: null,
+                     color: '#333',
+                     style : {
+                         fontFamily: 'Ubuntu, Arial, "libra sans", sans-serif;',
+                     }
+                 },
+
+                title: {
+                    text: 'Benchmark Results'
+                },
+                subtitle: {
+                    text: chart_data['title']
+                },
+                xAxis: {
+                    categories: []
+                },
+                yAxis: {
+                    title: {
+                        text: chart_data['yaxis_title']
+                    },
+                    plotLines: [{
+                        value: 0,
+                        width: 1,
+                        color: '#808080'
+                    }]
+                },
+                tooltip: {
+                    valueSuffix: chart_data['yaxis_title']
+                },
+                legend: {
+                    layout: 'vertical',
+                    align: 'right',
+                    verticalAlign: 'middle',
+                    borderWidth: 0
+                },
+                credits: {
+                    enabled: false
+                },
+                series: chart_data['series']
+            };
+            $('#container').highcharts(h_charts);
         }
     </script>
 </head>
@@ -33,58 +83,38 @@
 <body class="details-page">
 <div class="container">
 
+    <div class="align-center">
+        <h3>Cloud Weather Report</h3>
+    </div>
 
     <div class="wrapper">
         <div id="main-content">
 
-            <div class="row">
-                <h2>Cloud Weather Report</h2>
-            </div>
+            <div class="row no-border box">
+                <div>
+                    <h2 class="align-center">{{ charm_name }}</h2>
+                    <span> {{ results["date"]|humanize_date }} </span>
+                </div>
 
-            <div class="row no-border">
+                <div class="row">
+
                 <div class="twelve-col">
-
-                    <div class="six-col">
-                        <div><h3>{{ charm_name }}</h3></div>
-                        <div class="dotted-border box-grey align-center">
-                            {% if svg_path %}
-                                <img src="{{ svg_path }}" class="svg-img" />
-                            {% else %}
-                                Image not available
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <div class="six-col last-col no-margin-bottom">
-                        <div><h3>Last {{ results["date"]|humanize_date }}</h3></div>
-                        <div>
-                            <table style="table-layout:fixed">
-                                <col width="40px"/>
-                                <col width="20px"/>
-                                <col width="20px"/>
-                                <col width="20px"/>
-                                <col width="30px"/>
+                    <div class="six-col box no-border">
+                            <table class="last-result">
                                 {% for result in results['results'] %}
 
                                     {% set rowloop = loop %}
                                     <tr onclick="toggle_rows('t{{ rowloop.index }}');" class="result">
-                                        <td  class="rhead last-result">
+                                        <td colspan="4" class="rhead">
                                             <a href="javascript:;">{{ result["provider_name"] }}</a>
                                         </td>
-                                        <td colspan="3" class="rhead last-result sparkline">
-                                            {% if result.get('benchmarks') %}
-                                                <embed src="../static/images/line.svg?{{ ",".join(result['benchmarks'][0].values()[0]["all_values"]) }}" type="image/svg+xml"
-                                            height="50" width="100">
-                                            {% endif %}
-                                        </td>
-                                        <td class="rhead last-result">
+                                        <td class="rhead">
                                             <a href="javascript:;">
                                                 {{  display_status_img(result.get("test_outcome")) }}
                                             </a>
                                             <a href="javascript:;" >
-                                               <span class="more">&raquo;</span>
+                                                <span class="more">&raquo;</span>
                                             </a>
-
                                         </td>
                                     </tr>
                                     {% for test in result['tests'] %}
@@ -103,9 +133,35 @@
 
                                 {% endfor %}
                             </table>
+                    </div>
+
+                     <div class="six-col no-border last-col no-margin-bottom">
+                        <div class="dotted-border box-grey align-center">
+                            {% if svg_path %}
+                                <img src="{{ svg_path }}" class="svg-img" />
+                            {% else %}
+                                Image not available
+                            {% endif %}
                         </div>
                     </div>
                 </div>
+                </div>
+
+            </div>
+
+
+            <div class="row no-border box">
+                <div class="twelve-col">
+                    <div id="container" class="chart"><div>
+                        <script type="text/javascript">
+                            display_chart('{{ chart_data }}')
+                        </script>
+
+                </div>
+            </div>
+
+
+            <div class="row no-border box">
 
                 <div class="twelve-col no-margin-bottom">
                     <h3>Report history</h3>
@@ -126,15 +182,12 @@
                         {% endif %}
                     </table>
                 </div>
-
             </div>
+
 
         </div>
     </div>
 </div>
-<script>
 
-
-</script>
 </body>
 </html>
