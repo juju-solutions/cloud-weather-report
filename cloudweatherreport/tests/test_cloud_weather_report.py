@@ -124,6 +124,60 @@ class TestCloudWeatherReport(TestCase):
         mock_ntf.assert_called_once_with()
         mock_f.assert_called_once_with()
 
+    def test_run_bundle_test_provisioning_error(self):
+        env = Env(agent_state='pending')
+        io_output = StringIO()
+        test_plan = make_tst_plan()
+        args = Namespace()
+        exc = 'File /path/ raise exception'
+        with patch(
+                'cloud_weather_report.StringIO',
+                autospec=True, return_value=io_output) as mock_ntf:
+            with patch('cloud_weather_report.tester.main',
+                       autospec=True, side_effect=Exception
+                       ) as mock_tm:
+                with patch('traceback.format_exc', return_value=exc) as mock_f:
+                        output, status = cloud_weather_report.run_bundle_test(
+                            args, 'foo', test_plan, env=env)
+        expected_result = generate_test_result(
+            'Exception (foo):\nFile /path/ raise exception', returncode=240,
+            test="Provisioning Failure")
+        self.assertEqual(output, expected_result)
+        self.assertEqual(status, None)
+        main_call = Namespace(
+            environment='foo', output=io_output, reporter='json',
+            testdir='git', tests=['test1', 'test2'])
+        mock_tm.assert_called_once_with(main_call)
+        mock_ntf.assert_called_once_with()
+        mock_f.assert_called_once_with()
+
+    def test_run_bundle_test_provisioning_ok(self):
+        env = Env()
+        io_output = StringIO()
+        test_plan = make_tst_plan()
+        args = Namespace()
+        exc = 'File /path/ raise exception'
+        with patch(
+                'cloud_weather_report.StringIO',
+                autospec=True, return_value=io_output) as mock_ntf:
+            with patch('cloud_weather_report.tester.main',
+                       autospec=True, side_effect=Exception
+                       ) as mock_tm:
+                with patch('traceback.format_exc', return_value=exc) as mock_f:
+                    output, status = cloud_weather_report.run_bundle_test(
+                        args, 'foo', test_plan, env=env)
+        expected_result = generate_test_result(
+            'Exception (foo):\nFile /path/ raise exception',
+            test="Provisioning Failure", returncode=1)
+        self.assertEqual(output, expected_result)
+        self.assertEqual(status, None)
+        main_call = Namespace(
+            environment='foo', output=io_output, reporter='json',
+            testdir='git', tests=['test1', 'test2'])
+        mock_tm.assert_called_once_with(main_call)
+        mock_ntf.assert_called_once_with()
+        mock_f.assert_called_once_with()
+
     def test_main(self):
         status = self.make_status()
         run_bundle_test_p = patch(
@@ -157,8 +211,10 @@ class TestCloudWeatherReport(TestCase):
             self.assertEqual(json_content["bundle"]["name"], 'git')
             self.assertEqual(json_content["results"][0]["provider_name"],
                              'AWS')
-        mock_rbt.assert_called_once_with(args=args, env='aws',
-                                         test_plan=test_plan)
+
+        env = mock_jc.Environment.connect.return_value
+        mock_rbt.assert_called_once_with(args=args, env_name='aws',
+                                         test_plan=test_plan, env=env)
         mock_gf.assert_called_once_with('git')
 
     def test_main_multi_clouds(self):
@@ -187,8 +243,9 @@ class TestCloudWeatherReport(TestCase):
                                  info.return_value) = {"ProviderType": "ec2"}
                                 cloud_weather_report.main(args, test_plan)
                     json_content = json.loads(json_output.read())
-        calls = [call(args=args, env='aws', test_plan=test_plan),
-                 call(args=args, env='gce', test_plan=test_plan)]
+        env = mock_jc.Environment.connect.return_value
+        calls = [call(args=args, env_name='aws', test_plan=test_plan, env=env),
+                 call(args=args, env_name='gce', test_plan=test_plan, env=env)]
         self.assertEqual(mock_rbt.mock_calls, calls)
         mock_gf.assert_called_once_with('git')
         self.assertEqual(json_content["bundle"]["name"], 'git')
@@ -391,3 +448,21 @@ def make_tst_plan(multi_test_plans=False):
     if multi_test_plans:
         return p
     return p[0]
+
+
+class Env:
+
+    def __init__(self, agent_state='started'):
+        self.agent_state = agent_state
+
+    def status(self):
+        status = {
+            'EnvironmentName': 'default-joyent',
+            'Services': {},
+            'Networks': {},
+            'Machines': {
+                '0': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
+                      'AgentState': self.agent_state, 'AgentStateInfo': ''}
+            }
+        }
+        return status

@@ -39,6 +39,11 @@
 .fail, .fail:before, .fail:after{
     color: #ff3300;
 }
+
+.cloud-fail{
+    color: #FFA500;
+}
+
 .no-result, .no-result:before, .no-result:after {
     color:#ccc;
 }

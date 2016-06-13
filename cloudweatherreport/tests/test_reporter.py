@@ -99,6 +99,10 @@ class TestReporter(TestCase):
         self.assertEqual(r.get_test_outcome(results), r.some_failed_str)
         results = [r.fail_str, r.fail_str]
         self.assertEqual(r.get_test_outcome(results), r.all_failed_str)
+        results = [r.provision_failed_str]
+        self.assertEqual(r.get_test_outcome(results), r.provision_failed_str)
+        results = [r.pass_str, r.fail_str, r.provision_failed_str]
+        self.assertEqual(r.get_test_outcome(results), r.some_failed_str)
 
     def test_get_past_test_results(self):
         temp = mkdtemp()
