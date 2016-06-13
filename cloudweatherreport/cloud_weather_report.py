@@ -95,8 +95,9 @@ def run_bundle_test(args, env_name, test_plan=None, env=None):
         failure = 'Exception'
         if env:
             started = is_machine_agent_started(env.status())
-            return_code = PROVISIONING_ERROR_CODE if started is False else 1
-            failure = 'Provisioning Failure'
+            if started is False:
+                return_code = PROVISIONING_ERROR_CODE
+                failure = 'Provisioning Failure'
         test_result = generate_test_result(
             error, test=failure, returncode=return_code)
         return test_result, None

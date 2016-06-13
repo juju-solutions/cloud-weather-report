@@ -167,8 +167,7 @@ class TestCloudWeatherReport(TestCase):
                     output, status = cloud_weather_report.run_bundle_test(
                         args, 'foo', test_plan, env=env)
         expected_result = generate_test_result(
-            'Exception (foo):\nFile /path/ raise exception',
-            test="Provisioning Failure", returncode=1)
+            'Exception (foo):\nFile /path/ raise exception', returncode=1)
         self.assertEqual(output, expected_result)
         self.assertEqual(status, None)
         main_call = Namespace(
