@@ -19,6 +19,9 @@ import yaml
 import jujuclient
 
 
+PROVISIONING_ERROR_CODE = 240
+
+
 def read_file(file_path, file_type=None):
     deserializer = {'yaml': yaml.safe_load}
     with open(file_path) as stream:
@@ -220,3 +223,16 @@ def connect_juju_client(env_name, retries=3, logging=None):
                 logging.error('Jujuclient exception: {}'.format(tb))
             break
     return env
+
+
+def is_machine_agent_started(status, juju_major_version=2):
+    if juju_major_version == 1:
+        agent_status = 'Agent'
+    else:
+        agent_status = 'AgentStatus'
+    machines = status['Machines']
+    for machine in machines.values():
+        if machine[agent_status]['Status'] != 'started':
+            return False
+
+    return True

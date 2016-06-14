@@ -15,6 +15,7 @@ import jujuclient
 
 from reporter import Reporter
 from utils import (
+    PROVISIONING_ERROR_CODE,
     configure_logging,
     connect_juju_client,
     create_bundle_yaml,
@@ -24,6 +25,7 @@ from utils import (
     file_prefix,
     find_unit,
     get_provider_name,
+    is_machine_agent_started,
     mkdir_p,
     run_action,
 )
@@ -72,7 +74,7 @@ def parse_args(argv=None):
     return parser.parse_args(argv)
 
 
-def run_bundle_test(args, env, test_plan=None):
+def run_bundle_test(args, env_name, test_plan=None, env=None):
     """Run Bundletester and get the test results.
 
     :return: test result and test status.
@@ -80,16 +82,25 @@ def run_bundle_test(args, env, test_plan=None):
     test_result = StringIO()
     args.output = test_result
     args.tests = test_plan.get('tests') if test_plan else None
-    args.environment = env
+    args.environment = env_name
     args.reporter = 'json'
     args.testdir = test_plan.get('bundle') if test_plan else args.testdir
     try:
         status = tester.main(args)
     except Exception:
         tb = traceback.format_exc()
-        error = "Exception ({}):\n{}".format(env, tb)
+        error = "Exception ({}):\n{}".format(env_name, tb)
         logging.error(error)
-        test_result = generate_test_result(error)
+        return_code = 1
+        failure = 'Exception'
+        if env:
+            started = is_machine_agent_started(
+                env.status(), args.juju_major_version)
+            if started is False:
+                return_code = PROVISIONING_ERROR_CODE
+                failure = 'Provisioning Failure'
+        test_result = generate_test_result(
+            error, test=failure, returncode=return_code)
         return test_result, None
     return test_result.getvalue(), status
 
@@ -190,7 +201,7 @@ def main(args, test_plan):
         provider_name = get_provider_name(env_info["ProviderType"])
         logging.info('Running test on {}.'.format(provider_name))
         test_results, status = run_bundle_test(
-            args=args, env=env_name, test_plan=test_plan)
+            args=args, env_name=env_name, test_plan=test_plan, env=env)
         if status is None and test_results is None:
             continue
         last_successful_status = status
