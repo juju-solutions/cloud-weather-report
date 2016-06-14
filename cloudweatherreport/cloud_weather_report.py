@@ -94,7 +94,8 @@ def run_bundle_test(args, env_name, test_plan=None, env=None):
         return_code = 1
         failure = 'Exception'
         if env:
-            started = is_machine_agent_started(env.status())
+            started = is_machine_agent_started(
+                env.status(), args.juju_major_version)
             if started is False:
                 return_code = PROVISIONING_ERROR_CODE
                 failure = 'Provisioning Failure'

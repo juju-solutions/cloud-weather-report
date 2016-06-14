@@ -203,10 +203,11 @@ class TestUtil(TestCase):
             'Networks': {},
             'Machines': {
                 '0': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
-                      'AgentState': 'started', 'AgentStateInfo': ''}
+                      'AgentState': 'started', 'AgentStateInfo': '',
+                      'Agent': {'Status': 'started'}}
             }
         }
-        started = is_machine_agent_started(status)
+        started = is_machine_agent_started(status, juju_major_version=1)
         self.assertEqual(started, True)
 
     def test_is_machine_agent_started_pending(self):
@@ -216,10 +217,11 @@ class TestUtil(TestCase):
             'Networks': {},
             'Machines': {
                 '0': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
-                      'AgentState': 'pending', 'AgentStateInfo': ''}
+                      'AgentState': 'pending', 'AgentStateInfo': '',
+                      'Agent': {'Status': 'pending'}}
             }
         }
-        started = is_machine_agent_started(status)
+        started = is_machine_agent_started(status, juju_major_version=1)
         self.assertEqual(started, False)
 
     def test_is_machine_agent_started_multi(self):
@@ -229,12 +231,14 @@ class TestUtil(TestCase):
             'Networks': {},
             'Machines': {
                 '0': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
-                      'AgentState': 'started', 'AgentStateInfo': ''},
+                      'AgentState': 'started', 'AgentStateInfo': '',
+                      'Agent': {'Status': 'started'}},
                 '1': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
-                      'AgentState': 'started', 'AgentStateInfo': ''}
+                      'AgentState': 'started', 'AgentStateInfo': '',
+                      'Agent': {'Status': 'started'}},
             }
         }
-        started = is_machine_agent_started(status)
+        started = is_machine_agent_started(status, juju_major_version=1)
         self.assertEqual(started, True)
 
     def test_is_machine_agent_started_multi_pending(self):
@@ -244,12 +248,42 @@ class TestUtil(TestCase):
             'Networks': {},
             'Machines': {
                 '0': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
-                      'AgentState': 'started', 'AgentStateInfo': ''},
+                      'AgentState': 'started', 'AgentStateInfo': '',
+                      'Agent': {'Status': 'started'}},
                 '1': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
-                      'AgentState': 'pending', 'AgentStateInfo': ''}
+                      'AgentState': 'pending', 'AgentStateInfo': '',
+                      'Agent': {'Status': 'panding'}},
+            }
+        }
+        started = is_machine_agent_started(status, juju_major_version=1)
+        self.assertEqual(started, False)
+
+    def test_is_machine_agent_started_juju2(self):
+        status = {
+            'EnvironmentName': 'default-joyent',
+            'Services': {},
+            'Networks': {},
+            'Machines': {
+                '0': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
+                      'AgentStatus': {'Status': 'started'}},
+                '1': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
+                      'AgentStatus': {'Status': 'started'}},
             }
         }
         started = is_machine_agent_started(status)
+        self.assertEqual(started, True)
+
+    def test_is_machine_agent_started_juju2_not_started(self):
+        status = {
+            'EnvironmentName': 'default-joyent',
+            'Services': {},
+            'Networks': {},
+            'Machines': {
+                '0': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
+                      'AgentStatus': {'Status': 'panding'}},
+            }
+        }
+        started = is_machine_agent_started(status, juju_major_version=2)
         self.assertEqual(started, False)
 
 

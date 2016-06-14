@@ -225,9 +225,14 @@ def connect_juju_client(env_name, retries=3, logging=None):
     return env
 
 
-def is_machine_agent_started(status):
+def is_machine_agent_started(status, juju_major_version=2):
+    if juju_major_version == 1:
+        agent_status = 'Agent'
+    else:
+        agent_status = 'AgentStatus'
     machines = status['Machines']
     for machine in machines.values():
-        if machine['AgentState'] != 'started':
+        if machine[agent_status]['Status'] != 'started':
             return False
+
     return True

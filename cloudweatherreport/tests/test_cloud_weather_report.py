@@ -84,7 +84,7 @@ class TestCloudWeatherReport(TestCase):
     def test_run_bundle_test_no_test_plan(self):
         io_output = StringIO()
         test_plan = None
-        args = Namespace(testdir=None)
+        args = Namespace(testdir=None, juju_major_version=1)
         with patch(
                 'cloud_weather_report.StringIO',
                 autospec=True, return_value=io_output) as mock_ntf:
@@ -94,8 +94,9 @@ class TestCloudWeatherReport(TestCase):
                 output, status = cloud_weather_report.run_bundle_test(
                     args, 'foo', test_plan)
         self.assertEqual(output, 'test passed')
-        call = Namespace(environment='foo', output=io_output, reporter='json',
-                         testdir=None, tests=None)
+        call = Namespace(environment='foo', juju_major_version=1,
+                         output=io_output, reporter='json', testdir=None,
+                         tests=None)
         mock_tm.assert_called_once_with(call)
         mock_ntf.assert_called_once_with()
 
@@ -128,7 +129,7 @@ class TestCloudWeatherReport(TestCase):
         env = Env(agent_state='pending')
         io_output = StringIO()
         test_plan = make_tst_plan()
-        args = Namespace()
+        args = Namespace(juju_major_version=1)
         exc = 'File /path/ raise exception'
         with patch(
                 'cloud_weather_report.StringIO',
@@ -145,8 +146,8 @@ class TestCloudWeatherReport(TestCase):
         self.assertEqual(output, expected_result)
         self.assertEqual(status, None)
         main_call = Namespace(
-            environment='foo', output=io_output, reporter='json',
-            testdir='git', tests=['test1', 'test2'])
+            environment='foo', juju_major_version=1, output=io_output,
+            reporter='json', testdir='git', tests=['test1', 'test2'])
         mock_tm.assert_called_once_with(main_call)
         mock_ntf.assert_called_once_with()
         mock_f.assert_called_once_with()
@@ -155,7 +156,7 @@ class TestCloudWeatherReport(TestCase):
         env = Env()
         io_output = StringIO()
         test_plan = make_tst_plan()
-        args = Namespace()
+        args = Namespace(juju_major_version=1)
         exc = 'File /path/ raise exception'
         with patch(
                 'cloud_weather_report.StringIO',
@@ -171,8 +172,8 @@ class TestCloudWeatherReport(TestCase):
         self.assertEqual(output, expected_result)
         self.assertEqual(status, None)
         main_call = Namespace(
-            environment='foo', output=io_output, reporter='json',
-            testdir='git', tests=['test1', 'test2'])
+            environment='foo', juju_major_version=1, output=io_output,
+            reporter='json', testdir='git', tests=['test1', 'test2'])
         mock_tm.assert_called_once_with(main_call)
         mock_ntf.assert_called_once_with()
         mock_f.assert_called_once_with()
@@ -461,7 +462,8 @@ class Env:
             'Networks': {},
             'Machines': {
                 '0': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
-                      'AgentState': self.agent_state, 'AgentStateInfo': ''}
+                      'AgentState': self.agent_state, 'AgentStateInfo': '',
+                      'Agent': {'Status': self.agent_state}}
             }
         }
         return status
