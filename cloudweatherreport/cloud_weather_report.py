@@ -68,6 +68,8 @@ def parse_args(argv=None):
     parser.add_argument('test_plan', help="Test plan YAML file.")
     parser.add_argument('--result-output', help="Test result output file.",
                         default='result.html')
+    parser.add_argument('-o', '--result-dir', help="Directory where test results will go.",
+                        default='results')
     parser = bundle_tester_args(parser)
     return parser.parse_args(argv)
 
@@ -118,12 +120,11 @@ def run_actions(test_plan, client, env_status, bundle_name=None):
     return action_results
 
 
-def get_filenames(bundle):
+def get_filenames(bundle, result_dir):
     prefix = file_prefix(bundle)
     now = datetime.now().replace(microsecond=0).isoformat()
     html_filename = "{}-{}-result.html".format(prefix, now)
     json_filename = "{}-{}-result.json".format(prefix, now)
-    result_dir = 'results'
     mkdir_p(result_dir)
     static_dir = os.path.dirname(os.path.abspath(__file__))
     static_dir = os.path.join(static_dir, 'static')
@@ -177,7 +178,7 @@ def main(args, test_plan):
     results = []
     bundle = test_plan.get('bundle')
     args.bundle = test_plan.get('bundle_file')
-    html_filename, json_filename = get_filenames(bundle)
+    html_filename, json_filename = get_filenames(bundle, args.result_dir)
     last_successful_status = None
 
     for env_name in args.controller:
