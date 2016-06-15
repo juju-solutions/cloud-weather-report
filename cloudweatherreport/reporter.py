@@ -11,7 +11,10 @@ from jinja2 import (
     FileSystemLoader,
 )
 
-from utils import file_prefix
+from utils import (
+    PROVISIONING_ERROR_CODE,
+    file_prefix,
+)
 
 
 __metaclass__ = type
@@ -33,6 +36,7 @@ class Reporter:
         self.all_failed_str = 'All Failed'
         self.some_failed_str = 'Some Failed'
         self.no_test_result = 'No test result'
+        self.provision_failed_str = 'Provisioning Failed'
 
     def generate(self, html_filename, json_filename):
         json_content = self.generate_json(output_file=json_filename)
@@ -109,9 +113,16 @@ class Reporter:
         return html_content
 
     def _to_str(self, return_code):
-        return self.pass_str if return_code == 0 else self.fail_str
+        if return_code == 0:
+            return self.pass_str
+        elif return_code == PROVISIONING_ERROR_CODE:
+            return self.provision_failed_str
+        else:
+            return self.fail_str
 
     def get_test_outcome(self, results):
+        if results == [self.provision_failed_str]:
+            return self.provision_failed_str
         test_results = [True if r == self.pass_str else False for r in results]
         if not test_results:
             return self.no_test_result

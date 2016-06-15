@@ -18,6 +18,7 @@ from utils import (
     get_all_test_results,
     get_benchmark_data,
     get_provider_name,
+    is_machine_agent_started,
     iter_units,
     mkdir_p,
     read_file,
@@ -194,6 +195,96 @@ class TestUtil(TestCase):
                          [call(env_name='foo'), call(env_name='foo'),
                           call(env_name='foo')])
         self.assertEqual(env, None)
+
+    def test_is_machine_agent_started(self):
+        status = {
+            'EnvironmentName': 'default-joyent',
+            'Services': {},
+            'Networks': {},
+            'Machines': {
+                '0': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
+                      'AgentState': 'started', 'AgentStateInfo': '',
+                      'Agent': {'Status': 'started'}}
+            }
+        }
+        started = is_machine_agent_started(status, juju_major_version=1)
+        self.assertEqual(started, True)
+
+    def test_is_machine_agent_started_pending(self):
+        status = {
+            'EnvironmentName': 'default-joyent',
+            'Services': {},
+            'Networks': {},
+            'Machines': {
+                '0': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
+                      'AgentState': 'pending', 'AgentStateInfo': '',
+                      'Agent': {'Status': 'pending'}}
+            }
+        }
+        started = is_machine_agent_started(status, juju_major_version=1)
+        self.assertEqual(started, False)
+
+    def test_is_machine_agent_started_multi(self):
+        status = {
+            'EnvironmentName': 'default-joyent',
+            'Services': {},
+            'Networks': {},
+            'Machines': {
+                '0': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
+                      'AgentState': 'started', 'AgentStateInfo': '',
+                      'Agent': {'Status': 'started'}},
+                '1': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
+                      'AgentState': 'started', 'AgentStateInfo': '',
+                      'Agent': {'Status': 'started'}},
+            }
+        }
+        started = is_machine_agent_started(status, juju_major_version=1)
+        self.assertEqual(started, True)
+
+    def test_is_machine_agent_started_multi_pending(self):
+        status = {
+            'EnvironmentName': 'default-joyent',
+            'Services': {},
+            'Networks': {},
+            'Machines': {
+                '0': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
+                      'AgentState': 'started', 'AgentStateInfo': '',
+                      'Agent': {'Status': 'started'}},
+                '1': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
+                      'AgentState': 'pending', 'AgentStateInfo': '',
+                      'Agent': {'Status': 'panding'}},
+            }
+        }
+        started = is_machine_agent_started(status, juju_major_version=1)
+        self.assertEqual(started, False)
+
+    def test_is_machine_agent_started_juju2(self):
+        status = {
+            'EnvironmentName': 'default-joyent',
+            'Services': {},
+            'Networks': {},
+            'Machines': {
+                '0': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
+                      'AgentStatus': {'Status': 'started'}},
+                '1': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
+                      'AgentStatus': {'Status': 'started'}},
+            }
+        }
+        started = is_machine_agent_started(status)
+        self.assertEqual(started, True)
+
+    def test_is_machine_agent_started_juju2_not_started(self):
+        status = {
+            'EnvironmentName': 'default-joyent',
+            'Services': {},
+            'Networks': {},
+            'Machines': {
+                '0': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
+                      'AgentStatus': {'Status': 'panding'}},
+            }
+        }
+        started = is_machine_agent_started(status, juju_major_version=2)
+        self.assertEqual(started, False)
 
 
 def get_bundle_yaml():
