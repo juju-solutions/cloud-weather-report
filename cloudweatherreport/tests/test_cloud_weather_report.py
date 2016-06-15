@@ -53,14 +53,15 @@ class TestCloudWeatherReport(TestCase):
              '--deployment', 'depl', '--no-destroy', '--log-level', 'debug',
              '--dry-run', '--verbose', '--allow-failure', '--skip-implicit',
              '--exclude', 'skip_test', '--tests-yaml', 'test_yaml_file',
-             '--test-pattern', 'tp', '--juju-major-version', '2'])
+             '--test-pattern', 'tp', '--juju-major-version', '2'
+             '--result-dir', 'results'])
         expected = Namespace(
             bundle='foo-bundle', controller=['aws', 'gce'], deployment='depl',
             dryrun=True, exclude=['skip_test'], failfast=False,
             juju_major_version=2, log_level='debug', no_destroy=True,
             result_output='result', skip_implicit=True, test_pattern='tp',
             test_plan='test_plan', testdir='/test/dir',
-            tests_yaml='test_yaml_file', verbose=True)
+            tests_yaml='test_yaml_file', verbose=True, result_dir='results')
         self.assertEqual(args, expected)
 
     def test_run_bundle_test(self):
