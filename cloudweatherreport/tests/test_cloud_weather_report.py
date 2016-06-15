@@ -351,7 +351,7 @@ class TestCloudWeatherReport(TestCase):
     def test_get_filenames(self):
         with temp_dir() as temp:
             with temp_cwd(temp):
-                h_file, j_file = cloud_weather_report.get_filenames('git')
+                h_file, j_file = cloud_weather_report.get_filenames('git', 'results')
             static_path = os.path.join(temp, 'results', 'static')
             self.assertTrue(os.path.isdir(static_path))
             self.assertTrue(os.path.isdir(os.path.join(static_path, 'css')))
@@ -366,7 +366,7 @@ class TestCloudWeatherReport(TestCase):
         with temp_dir() as temp:
             with temp_cwd(temp):
                 h_file, j_file = cloud_weather_report.get_filenames(
-                    'http://example.com/~git')
+                    'http://example.com/~git', 'results')
         self.assertTrue(h_file.startswith(
             'results/http___example_com__git') and h_file.endswith('.html'))
         self.assertTrue(j_file.startswith(
@@ -375,7 +375,7 @@ class TestCloudWeatherReport(TestCase):
         with temp_dir() as temp:
             with temp_cwd(temp):
                 h_file, j_file = cloud_weather_report.get_filenames(
-                    'cs:~user/mysql-benchmark')
+                    'cs:~user/mysql-benchmark', 'results')
         self.assertTrue(j_file.startswith(
             'results/cs__user_mysql_benchmark') and j_file.endswith('.json'))
 
