@@ -14,7 +14,6 @@
 .result{
     background-color: #fff;
 }
-
 .textwrapper
 {
     width: 100%;
@@ -26,7 +25,6 @@
 .hide-it{
     display: none;
 }
-
 .test-result, .test-result:before, .test-result:after {
     padding: 0;
     height: 12px;
@@ -41,8 +39,26 @@
 .fail, .fail:before, .fail:after{
     color: #ff3300;
 }
+
+.cloud-fail{
+    color: #FFA500;
+}
+
 .no-result, .no-result:before, .no-result:after {
     color:#ccc;
+}
+
+.last-result {
+    table-layout: fixed;
+}
+
+.last-result > tbody > tr > td {
+    border: none;
+    border-bottom: 1px dotted #ccc !important;
+}
+
+.last-result-box{
+    margin-top: 30px;
 }
 
 .history{
@@ -62,13 +78,7 @@
 
 .svg-img{
     max-height: 300px;
-    min-height: 150px;
-}
-
-.last-result {
-    height: 40px;
-    border: none;
-    border-bottom: 1px dotted #ccc !important;
+    min-height: 200px;
 }
 
 .sparkline {
@@ -76,7 +86,24 @@
     height: 35px;
 }
 
+.chart{
+    min-width: 350px;
+    height: 400px;
+    margin: 0 auto;
+}
+
+.box{
+    padding-bottom: 5px;
+    border: none;
+}
+
 .more {
     font-size: 20px;
     padding-left:10px
+}
+
+.suite-title {
+    border-top: 1px solid #aaa;
+    border-bottom: 1px solid #aaa;
+    color:#888
 }

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>{{ title }}</title>
     <link rel="stylesheet" type="text/css" media="screen" href="static/css/ubuntu-styles.css">
-    <link rel="stylesheet" type="text/css" href="static/css/base2.css">
+    <link rel="stylesheet" type="text/css" href="static/css/base.css">
     <script type='text/javascript' src='static/js/jquery.min.js'></script>
     <script type='text/javascript' src='static/js/highcharts.js'></script>
     <script type="text/javascript">
@@ -119,18 +119,29 @@
                                             </a>
                                         </td>
                                     </tr>
-                                    {% for test in result['tests'] %}
-                                        <tr class="t{{ rowloop.index }} hide-it">
-                                            <td colspan="4" class="" onclick="toggle_rows('output{{ rowloop.index }}{{ loop.index }}')">
-                                                <a href="javascript:;">{{ test["name"] }}</a>
-                                            </td>
-                                            <td class="">{{ display_status_img(test["result"]) }}</td>
-                                        </tr>
-                                        <tr class="output{{ rowloop.index }}{{ loop.index }} hide-it">
-                                            <td colspan="5">
-                                                <textarea cols="7" disabled class="textwrapper">{{ test.get("output", "no output")|safe }}</textarea>
-                                            </td>
-                                        </tr>
+
+                                    {% for group in result['tests']|groupby('suite') %}
+
+                                            <tr class="t{{ rowloop.index }} hide-it suite-title">
+                                                <td colspan="5">
+                                                    {{ group.grouper }}
+                                                </td>
+                                            <tr>
+
+                                            {% for test in group.list %}
+                                                <tr class="t{{ rowloop.index }} hide-it">
+                                                    <td colspan="4" class="" onclick="toggle_rows('output{{ rowloop.index }}{{ loop.index }}')">
+                                                        <a href="javascript:;">{{ test["name"] }}</a>
+                                                    </td>
+                                                    <td class="">{{ display_status_img(test["result"]) }}</td>
+                                                </tr>
+                                                <tr class="output{{ rowloop.index }}{{ loop.index }} hide-it">
+                                                    <td colspan="5">
+                                                        <textarea cols="7" disabled class="textwrapper">{{ test.get("output", "no output")|safe }}</textarea>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+
                                     {% endfor %}
 
                                 {% endfor %}
