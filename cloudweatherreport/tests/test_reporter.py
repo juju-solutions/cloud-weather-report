@@ -211,17 +211,20 @@ class TestReporter(TestCase):
                         {
                             "duration": 1.55,
                             "name": "charm-proof",
-                            "result": "PASS"
+                            "result": "PASS",
+                            "suite": "git"
                         },
                         {
                             "duration": 2.55,
                             "name": "00-setup",
-                            "result": "PASS"
+                            "result": "PASS",
+                            "suite": "git"
                         },
                         {
                             "duration": 3.55,
                             "name": "10-actions",
-                            "result": "PASS"
+                            "result": "PASS",
+                            "suite": "foo"
                         }
                     ],
                     "provider_name": "AWS",
@@ -239,17 +242,20 @@ class TestReporter(TestCase):
                         {
                             "duration": 1,
                             "name": "charm-proof",
-                            "result": "PASS"
+                            "result": "PASS",
+                            "suite": "git"
                         },
                         {
                             "duration": 2,
                             "name": "00-setup",
-                            "result": "PASS"
+                            "result": "PASS",
+                            "suite": "git"
                         },
                         {
                             "duration": 3,
                             "name": "10-actions",
-                            "result": "FAIL"
+                            "result": "FAIL",
+                            "suite": "foo"
                         }
                     ],
                     "provider_name": "Joyent",
