@@ -42,7 +42,7 @@ class TestCloudWeatherReport(TestCase):
             exclude=None, failfast=True, juju_major_version=1,
             log_level='INFO', no_destroy=False, result_output='result.html',
             skip_implicit=False, test_pattern=None, test_plan='test_plan',
-            testdir=os.getcwd(), tests_yaml=None, verbose=False)
+            testdir=os.getcwd(), tests_yaml=None, verbose=False, result_dir='results')
         self.assertEqual(args, expected)
         gjmv_mock.assert_called_once_with()
 
@@ -53,14 +53,15 @@ class TestCloudWeatherReport(TestCase):
              '--deployment', 'depl', '--no-destroy', '--log-level', 'debug',
              '--dry-run', '--verbose', '--allow-failure', '--skip-implicit',
              '--exclude', 'skip_test', '--tests-yaml', 'test_yaml_file',
-             '--test-pattern', 'tp', '--juju-major-version', '2'])
+             '--test-pattern', 'tp', '--juju-major-version', '2',
+             '--result-dir', '/result/dir'])
         expected = Namespace(
             bundle='foo-bundle', controller=['aws', 'gce'], deployment='depl',
             dryrun=True, exclude=['skip_test'], failfast=False,
             juju_major_version=2, log_level='debug', no_destroy=True,
             result_output='result', skip_implicit=True, test_pattern='tp',
             test_plan='test_plan', testdir='/test/dir',
-            tests_yaml='test_yaml_file', verbose=True)
+            tests_yaml='test_yaml_file', verbose=True, result_dir='/result/dir')
         self.assertEqual(args, expected)
 
     def test_run_bundle_test(self):
@@ -192,7 +193,8 @@ class TestCloudWeatherReport(TestCase):
                                      result_output=html_output.name,
                                      test_plan=test_plan_file.name,
                                      testdir='git',
-                                     verbose=False)
+                                     verbose=False,
+                                     result_dir='results')
                     get_filenames_p = patch(
                         'cloud_weather_report.'
                         'get_filenames', autospec=True, return_value=(
@@ -211,11 +213,10 @@ class TestCloudWeatherReport(TestCase):
             self.assertEqual(json_content["bundle"]["name"], 'git')
             self.assertEqual(json_content["results"][0]["provider_name"],
                              'AWS')
-
         env = mock_jc.Environment.connect.return_value
         mock_rbt.assert_called_once_with(args=args, env_name='aws',
                                          test_plan=test_plan, env=env)
-        mock_gf.assert_called_once_with('git')
+        mock_gf.assert_called_once_with('git', 'results')
 
     def test_main_multi_clouds(self):
         status = self.make_status()
@@ -231,7 +232,8 @@ class TestCloudWeatherReport(TestCase):
                                      result_output="result.html",
                                      test_plan=test_plan_file.name,
                                      testdir=None,
-                                     verbose=False)
+                                     verbose=False,
+                                     result_dir='results')
                     get_filenames_p = patch(
                         'cloud_weather_report.'
                         'get_filenames', autospec=True, return_value=(
@@ -247,7 +249,7 @@ class TestCloudWeatherReport(TestCase):
         calls = [call(args=args, env_name='aws', test_plan=test_plan, env=env),
                  call(args=args, env_name='gce', test_plan=test_plan, env=env)]
         self.assertEqual(mock_rbt.mock_calls, calls)
-        mock_gf.assert_called_once_with('git')
+        mock_gf.assert_called_once_with('git', 'results')
         self.assertEqual(json_content["bundle"]["name"], 'git')
 
     def test_run_actions(self):
@@ -351,7 +353,7 @@ class TestCloudWeatherReport(TestCase):
     def test_get_filenames(self):
         with temp_dir() as temp:
             with temp_cwd(temp):
-                h_file, j_file = cloud_weather_report.get_filenames('git')
+                h_file, j_file = cloud_weather_report.get_filenames('git', 'results')
             static_path = os.path.join(temp, 'results', 'static')
             self.assertTrue(os.path.isdir(static_path))
             self.assertTrue(os.path.isdir(os.path.join(static_path, 'css')))
@@ -366,7 +368,7 @@ class TestCloudWeatherReport(TestCase):
         with temp_dir() as temp:
             with temp_cwd(temp):
                 h_file, j_file = cloud_weather_report.get_filenames(
-                    'http://example.com/~git')
+                    'http://example.com/~git', 'results')
         self.assertTrue(h_file.startswith(
             'results/http___example_com__git') and h_file.endswith('.html'))
         self.assertTrue(j_file.startswith(
@@ -375,7 +377,7 @@ class TestCloudWeatherReport(TestCase):
         with temp_dir() as temp:
             with temp_cwd(temp):
                 h_file, j_file = cloud_weather_report.get_filenames(
-                    'cs:~user/mysql-benchmark')
+                    'cs:~user/mysql-benchmark', 'results')
         self.assertTrue(j_file.startswith(
             'results/cs__user_mysql_benchmark') and j_file.endswith('.json'))
 
