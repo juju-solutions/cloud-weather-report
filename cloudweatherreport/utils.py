@@ -14,6 +14,7 @@ import subprocess
 from tempfile import mkdtemp
 from time import sleep
 import traceback
+import uuid
 import yaml
 
 import jujuclient
@@ -236,3 +237,7 @@ def is_machine_agent_started(status, juju_major_version=2):
             return False
 
     return True
+
+
+def generate_test_id():
+    return uuid.uuid4().hex

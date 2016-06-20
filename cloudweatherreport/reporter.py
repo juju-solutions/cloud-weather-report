@@ -144,7 +144,8 @@ class Reporter:
                 "relations": None,
                 "machines": None,
             },
-            "results": []
+            "results": [],
+            "test_id": self.options.test_id,
         }
         outcomes = []
         test_outcomes = []

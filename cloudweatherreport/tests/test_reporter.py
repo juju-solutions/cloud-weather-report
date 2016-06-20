@@ -1,3 +1,4 @@
+from argparse import Namespace
 import json
 import os
 from shutil import rmtree
@@ -34,7 +35,8 @@ class TestReporter(TestCase):
 
     def test_generate_json(self):
         results = self.make_results()
-        reporter = Reporter(bundle='git', results=results, options=None)
+        args = self.make_args()
+        reporter = Reporter(bundle='git', results=results, options=args)
         with NamedTemporaryFile() as json_file:
             json_result = reporter.generate_json(output_file=json_file.name)
             json_result = json.loads(json_result)
@@ -52,10 +54,12 @@ class TestReporter(TestCase):
                     test.keys(),
                     ['duration', 'output', 'suite', 'name', 'result'])
         self.assertIn('"name": "charm-proof"', content)
+        self.assertEqual(json_result['test_id'], '1234')
 
     def test_generate(self):
+        args = self.make_args()
         results = self.make_results()
-        reporter = Reporter(bundle='git', results=results, options=None)
+        reporter = Reporter(bundle='git', results=results, options=args)
         with NamedTemporaryFile() as json_file:
             with NamedTemporaryFile() as html_file:
                 reporter.generate(
@@ -73,7 +77,8 @@ class TestReporter(TestCase):
         svg_file = os.path.join(tempdir, 'file.svg')
         results = self.make_results()
         fake_request = FakeRequest()
-        reporter = Reporter(bundle='git', results=results, options=None,
+        args = self.make_args()
+        reporter = Reporter(bundle='git', results=results, options=args,
                             bundle_yaml='bundle content')
         with patch('reporter.requests.post',
                    autospec=True, return_value=fake_request) as mock_r:
@@ -88,6 +93,7 @@ class TestReporter(TestCase):
             svg_content = fp.read()
         self.assertIn('charm-proof', html_content)
         self.assertEqual(json_content["bundle"]["name"], 'git')
+        self.assertEqual(json_content["test_id"], '1234')
         self.assertEqual(svg_content, 'svg content')
         rmtree(tempdir)
 
@@ -287,6 +293,9 @@ class TestReporter(TestCase):
                 "machines": null
             }
         }"""
+
+    def make_args(self):
+        return Namespace(test_id='1234')
 
 
 class FakeRequest:
