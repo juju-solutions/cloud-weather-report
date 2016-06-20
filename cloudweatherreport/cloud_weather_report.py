@@ -22,6 +22,7 @@ from utils import (
     generate_test_result,
     get_benchmark_data,
     get_juju_major_version,
+    generate_test_id,
     file_prefix,
     find_unit,
     get_provider_name,
@@ -61,6 +62,8 @@ def bundle_tester_args(parser):
     parser.add_argument('--test-pattern', dest="test_pattern")
     parser.add_argument('--juju-major-version', type=int,
                         default=get_juju_major_version())
+    parser.add_argument('--test-id', dest="test_id", help="Test ID.",
+                        default=generate_test_id())
     return parser
 
 

@@ -36,13 +36,15 @@ class TestCloudWeatherReport(TestCase):
         with patch(
             'cloud_weather_report.get_juju_major_version', autospec=True,
                 return_value=1) as gjmv_mock:
-            args = cloud_weather_report.parse_args(['aws', 'test_plan'])
+            args = cloud_weather_report.parse_args(
+                ['aws', 'test_plan', '--test-id', '1234'])
         expected = Namespace(
             bundle=None, controller=['aws'], deployment=None, dryrun=False,
             exclude=None, failfast=True, juju_major_version=1,
             log_level='INFO', no_destroy=False, result_output='result.html',
-            skip_implicit=False, test_pattern=None, test_plan='test_plan',
-            testdir=os.getcwd(), tests_yaml=None, verbose=False)
+            skip_implicit=False, test_id='1234', test_pattern=None,
+            test_plan='test_plan', testdir=os.getcwd(), tests_yaml=None,
+            verbose=False)
         self.assertEqual(args, expected)
         gjmv_mock.assert_called_once_with()
 
@@ -52,14 +54,15 @@ class TestCloudWeatherReport(TestCase):
              '--testdir', '/test/dir', '--bundle', 'foo-bundle',
              '--deployment', 'depl', '--no-destroy', '--log-level', 'debug',
              '--dry-run', '--verbose', '--allow-failure', '--skip-implicit',
-             '--exclude', 'skip_test', '--tests-yaml', 'test_yaml_file',
-             '--test-pattern', 'tp', '--juju-major-version', '2'])
+             '--exclude', 'skip_test', '--test-id', '2345', '--tests-yaml',
+             'test_yaml_file', '--test-pattern', 'tp',
+             '--juju-major-version', '2'])
         expected = Namespace(
             bundle='foo-bundle', controller=['aws', 'gce'], deployment='depl',
             dryrun=True, exclude=['skip_test'], failfast=False,
             juju_major_version=2, log_level='debug', no_destroy=True,
-            result_output='result', skip_implicit=True, test_pattern='tp',
-            test_plan='test_plan', testdir='/test/dir',
+            result_output='result', skip_implicit=True, test_id='2345',
+            test_pattern='tp', test_plan='test_plan', testdir='/test/dir',
             tests_yaml='test_yaml_file', verbose=True)
         self.assertEqual(args, expected)
 
@@ -191,6 +194,7 @@ class TestCloudWeatherReport(TestCase):
                     args = Namespace(controller=['aws'],
                                      result_output=html_output.name,
                                      test_plan=test_plan_file.name,
+                                     test_id='1234',
                                      testdir='git',
                                      verbose=False)
                     get_filenames_p = patch(
@@ -230,6 +234,7 @@ class TestCloudWeatherReport(TestCase):
                     args = Namespace(controller=['aws', 'gce'],
                                      result_output="result.html",
                                      test_plan=test_plan_file.name,
+                                     test_id='1234',
                                      testdir=None,
                                      verbose=False)
                     get_filenames_p = patch(
@@ -249,6 +254,7 @@ class TestCloudWeatherReport(TestCase):
         self.assertEqual(mock_rbt.mock_calls, calls)
         mock_gf.assert_called_once_with('git')
         self.assertEqual(json_content["bundle"]["name"], 'git')
+        self.assertEqual(json_content["test_id"], '1234')
 
     def test_run_actions(self):
         content = """
