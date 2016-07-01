@@ -6,7 +6,6 @@
     <link rel="stylesheet" type="text/css" media="screen" href="static/css/ubuntu-styles.css">
     <link rel="stylesheet" type="text/css" href="static/css/base.css">
     <script type='text/javascript' src='static/js/jquery.min.js'></script>
-    <script type='text/javascript' src='static/js/highcharts.js'></script>
     <script type="text/javascript">
         function hide_rows(name) {
             name = '.' + name;
@@ -17,55 +16,6 @@
             name = '.' + name;
             $(name).toggle();
             return false;
-        }
-        function display_chart (chart_data) {
-            chart_data = JSON.parse(chart_data);
-            h_charts = {
-                 chart: {
-                     renderTo: 'containter',
-                     borderLeftWidth: 1,
-                     borderColor: '#eee',
-                     backgroundColor: null,
-                     color: '#333',
-                     style : {
-                         fontFamily: 'Ubuntu, Arial, "libra sans", sans-serif;',
-                     }
-                 },
-
-                title: {
-                    text: 'Benchmark Results'
-                },
-                subtitle: {
-                    text: chart_data['title']
-                },
-                xAxis: {
-                    categories: []
-                },
-                yAxis: {
-                    title: {
-                        text: chart_data['yaxis_title']
-                    },
-                    plotLines: [{
-                        value: 0,
-                        width: 1,
-                        color: '#808080'
-                    }]
-                },
-                tooltip: {
-                    valueSuffix: chart_data['yaxis_title']
-                },
-                legend: {
-                    layout: 'vertical',
-                    align: 'right',
-                    verticalAlign: 'middle',
-                    borderWidth: 0
-                },
-                credits: {
-                    enabled: false
-                },
-                series: chart_data['series']
-            };
-            $('#container').highcharts(h_charts);
         }
     </script>
 </head>
@@ -166,10 +116,6 @@
             <div class="row no-border box">
                 <div class="twelve-col">
                     <div id="container" class="chart"><div>
-                        <script type="text/javascript">
-                            display_chart('{{ chart_data }}')
-                        </script>
-
                 </div>
             </div>
 
