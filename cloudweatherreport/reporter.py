@@ -175,7 +175,7 @@ class Reporter:
             test_outcomes = []
             benchmarks = []
 
-        json_result = json.dumps(output, indent=2)
+        json_result = json.dumps(output, indent=2, sort_keys=True)
         if output_file:
             with codecs.open(output_file, 'w', encoding='utf-8') as fp:
                 fp.write(json_result)

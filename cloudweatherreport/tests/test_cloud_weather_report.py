@@ -6,6 +6,7 @@ from StringIO import StringIO
 from tempfile import (
     NamedTemporaryFile,
 )
+from datetime import datetime
 from unittest import TestCase
 
 from mock import (
@@ -24,10 +25,12 @@ from tests.test_utils import make_fake_status
 from utils import (
     generate_test_result,
     temp_dir,
+    chdir,
 )
 
 
 class TestCloudWeatherReport(TestCase):
+    maxDiff = None
 
     def setUp(self):
         setup_test_logging(self)
@@ -221,41 +224,57 @@ class TestCloudWeatherReport(TestCase):
                                          test_plan=test_plan, env=env)
         mock_gf.assert_called_once_with('git')
 
-    def test_main_multi_clouds(self):
+    @patch('reporter.datetime')
+    def test_main_multi_clouds(self, mdatetime):
+        mdatetime.now.return_value = datetime(2016, 7, 13, 0, 0, 0)
         status = self.make_status()
         run_bundle_test_p = patch(
             'cloud_weather_report.run_bundle_test',
             autospec=True, return_value=(self.make_results(), status))
         juju_client_p = patch('utils.env1', autospec=True)
-        with NamedTemporaryFile() as test_plan_file:
-            with NamedTemporaryFile() as html_output:
-                with NamedTemporaryFile() as json_output:
-                    test_plan = make_tst_plan_file(test_plan_file.name)
-                    args = Namespace(controller=['aws', 'gce'],
+        run_action_p = patch('cloud_weather_report.run_action',
+                             return_value=self.make_benchmark_data())
+        find_unit_p = patch('cloud_weather_report.find_unit',
+                            return_value='unit/0')
+        with temp_dir() as tmp_path:
+            with chdir(tmp_path):
+                os.mkdir('results')
+                test_plan_file = 'test_plan.yaml'
+                html_file = 'results/result.html'
+                json_file = 'results/result.json'
+                test_plan = make_tst_plan_file(test_plan_file,
+                                               benchmark=True)
+                args = Namespace(controller=['aws', 'gce'],
                                      juju_major_version=1,
-                                     result_output="result.html",
-                                     test_plan=test_plan_file.name,
-                                     test_id='1234',
-                                     testdir=None,
-                                     verbose=False)
-                    get_filenames_p = patch(
-                        'cloud_weather_report.'
-                        'get_filenames', autospec=True, return_value=(
-                            html_output.name, json_output.name))
-                    with run_bundle_test_p as mock_rbt:
-                        with get_filenames_p as mock_gf:
-                            with juju_client_p as mock_jc:
-                                (mock_jc.connect.return_value.
-                                 info.return_value) = {"ProviderType": "ec2"}
-                                cloud_weather_report.main(args, test_plan)
+                                 result_output="result.html",
+                                 test_plan=test_plan_file,
+                                 test_id='1234',
+                                 testdir=None,
+                                 verbose=False)
+                get_filenames_p = patch(
+                    'cloud_weather_report.get_filenames',
+                    autospec=True,
+                    return_value=(html_file, json_file))
+                with run_bundle_test_p as mock_rbt, \
+                        get_filenames_p as mock_gf, \
+                        juju_client_p as mock_jc, \
+                        run_action_p as mock_ra, \
+                        find_unit_p:
+                    (mock_jc.Environment.connect.return_value.
+                     info.return_value) = {"ProviderType": "ec2"}
+                    cloud_weather_report.main(args, test_plan)
+                with open(json_file) as json_output:
                     json_content = json.loads(json_output.read())
         env = mock_jc.connect.return_value
         calls = [call(args=args, env_name='aws', test_plan=test_plan, env=env),
                  call(args=args, env_name='gce', test_plan=test_plan, env=env)]
         self.assertEqual(mock_rbt.mock_calls, calls)
         mock_gf.assert_called_once_with('git')
-        self.assertEqual(json_content["bundle"]["name"], 'git')
-        self.assertEqual(json_content["test_id"], '1234')
+        assert mock_ra.called
+        test_data_dir = os.path.join(os.path.dirname(__file__), 'data')
+        with open(os.path.join(test_data_dir, 'result-v1.json')) as fp:
+            expected_data = json.load(fp)
+        self.assertEqual(json_content, expected_data)
 
     def test_run_actions(self):
         content = """
@@ -439,19 +458,21 @@ class TestCloudWeatherReport(TestCase):
         }
 
 
-def make_tst_plan_file(filename, multi_test_plans=False):
-    test_plan = make_tst_plan(multi_test_plans)
+def make_tst_plan_file(filename, multi_test_plans=False, benchmark=False):
+    test_plan = make_tst_plan(multi_test_plans, benchmark)
     content = yaml.dump(test_plan)
     with open(filename, 'w') as yaml_file:
         yaml_file.write(content)
     return yaml.load(content)
 
 
-def make_tst_plan(multi_test_plans=False):
+def make_tst_plan(multi_test_plans=False, benchmark=False):
     p = [
         {'tests': ['test1', 'test2'], 'bundle': 'git'},
         {'tests': ['test1'], 'bundle': 'mongodb'},
     ]
+    if benchmark:
+        p[0]['benchmark'] = {'unit/0': 'params'}
     if multi_test_plans:
         return p
     return p[0]
