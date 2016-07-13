@@ -187,6 +187,16 @@ def temp_dir(parent=None, keep=False):
             rmtree(directory)
 
 
+@contextmanager
+def chdir(path):
+    orig = os.getcwd()
+    try:
+        os.chdir(path)
+        yield
+    finally:
+        os.chdir(orig)
+
+
 def get_juju_major_version():
     return int(subprocess.check_output(["juju", "version"]).split(b'.')[0])
 
