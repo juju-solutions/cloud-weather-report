@@ -17,7 +17,8 @@ import traceback
 import uuid
 import yaml
 
-import jujuclient
+from jujuclient.juju1.environment import Environment as env1
+from jujuclient.juju2.environment import Environment as env2
 
 
 PROVISIONING_ERROR_CODE = 240
@@ -206,23 +207,19 @@ def generate_test_result(output, test='Exception', returncode=1, duration=0,
     return json.dumps(results)
 
 
-def connect_juju_client(env_name, retries=3, logging=None):
+def connect_juju_client(env_name, juju_major_version, retries=3, logging=None):
     """Connect to jujuclient."""
     env = None
+    juju_client = env1 if juju_major_version == 1 else env2
     for _ in xrange(retries):
         try:
-            env = jujuclient.Environment.connect(env_name=env_name)
+            env = juju_client.connect(env_name=env_name)
             break
         except socket.timeout:
             if logging:
                 tb = traceback.format_exc()
                 logging.error('Jujuclient exception: {}'.format(tb))
             continue
-        except Exception:
-            if logging:
-                tb = traceback.format_exc()
-                logging.error('Jujuclient exception: {}'.format(tb))
-            break
     return env
 
 
