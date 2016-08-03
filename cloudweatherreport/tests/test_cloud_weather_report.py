@@ -186,12 +186,13 @@ class TestCloudWeatherReport(TestCase):
         run_bundle_test_p = patch(
             'cloud_weather_report.run_bundle_test',
             autospec=True, return_value=(self.make_results(), status))
-        juju_client_p = patch('utils.jujuclient', autospec=True)
+        juju_client_p = patch('utils.env2', autospec=True)
         with NamedTemporaryFile() as html_output:
             with NamedTemporaryFile() as json_output:
                 with NamedTemporaryFile() as test_plan_file:
                     test_plan = make_tst_plan_file(test_plan_file.name)
                     args = Namespace(controller=['aws'],
+                                     juju_major_version=2,
                                      result_output=html_output.name,
                                      test_plan=test_plan_file.name,
                                      test_id='1234',
@@ -204,7 +205,7 @@ class TestCloudWeatherReport(TestCase):
                     with run_bundle_test_p as mock_rbt:
                         with get_filenames_p as mock_gf:
                             with juju_client_p as mock_jc:
-                                (mock_jc.Environment.connect.return_value.
+                                (mock_jc.connect.return_value.
                                  info.return_value) = {"ProviderType": "ec2"}
                                 with patch('cloud_weather_report.shutil'):
                                         cloud_weather_report.main(
@@ -215,8 +216,7 @@ class TestCloudWeatherReport(TestCase):
             self.assertEqual(json_content["bundle"]["name"], 'git')
             self.assertEqual(json_content["results"][0]["provider_name"],
                              'AWS')
-
-        env = mock_jc.Environment.connect.return_value
+        env = mock_jc.connect.return_value
         mock_rbt.assert_called_once_with(args=args, env_name='aws',
                                          test_plan=test_plan, env=env)
         mock_gf.assert_called_once_with('git')
@@ -226,12 +226,13 @@ class TestCloudWeatherReport(TestCase):
         run_bundle_test_p = patch(
             'cloud_weather_report.run_bundle_test',
             autospec=True, return_value=(self.make_results(), status))
-        juju_client_p = patch('utils.jujuclient', autospec=True)
+        juju_client_p = patch('utils.env1', autospec=True)
         with NamedTemporaryFile() as test_plan_file:
             with NamedTemporaryFile() as html_output:
                 with NamedTemporaryFile() as json_output:
                     test_plan = make_tst_plan_file(test_plan_file.name)
                     args = Namespace(controller=['aws', 'gce'],
+                                     juju_major_version=1,
                                      result_output="result.html",
                                      test_plan=test_plan_file.name,
                                      test_id='1234',
@@ -244,11 +245,11 @@ class TestCloudWeatherReport(TestCase):
                     with run_bundle_test_p as mock_rbt:
                         with get_filenames_p as mock_gf:
                             with juju_client_p as mock_jc:
-                                (mock_jc.Environment.connect.return_value.
+                                (mock_jc.connect.return_value.
                                  info.return_value) = {"ProviderType": "ec2"}
                                 cloud_weather_report.main(args, test_plan)
                     json_content = json.loads(json_output.read())
-        env = mock_jc.Environment.connect.return_value
+        env = mock_jc.connect.return_value
         calls = [call(args=args, env_name='aws', test_plan=test_plan, env=env),
                  call(args=args, env_name='gce', test_plan=test_plan, env=env)]
         self.assertEqual(mock_rbt.mock_calls, calls)

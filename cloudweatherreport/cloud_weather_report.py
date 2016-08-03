@@ -195,10 +195,18 @@ def main(args, test_plan):
     last_successful_status = None
 
     for env_name in args.controller:
-        env = connect_juju_client(env_name, logging=logging)
-        if not env:
-            logging.error("Jujuclient could not connect to {} ".format(
-                env_name))
+        try:
+            env = connect_juju_client(
+                env_name, args.juju_major_version, logging=logging)
+        except Exception:
+            tb = traceback.format_exc()
+            error = 'Jujuclient exception({}): {}'.format(env_name, tb)
+            logging.error(error)
+            results.append({
+                "provider_name": env_name,
+                "test_results": json.loads(generate_test_result(error)),
+                "action_results": [],
+                "info": {}})
             continue
         env_info = env.info()
         provider_name = get_provider_name(env_info["ProviderType"])

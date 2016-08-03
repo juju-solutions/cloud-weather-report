@@ -174,24 +174,17 @@ class TestUtil(TestCase):
         rmtree(temp)
 
     def test_connect_juju_client(self):
-        with patch('utils.jujuclient', autospec=True) as jc_mock:
-            jc_mock.Environment.connect.return_value = 'bar'
-            env = connect_juju_client('foo')
-        jc_mock.Environment.connect.assert_called_once_with(env_name='foo')
+        with patch('utils.env1', autospec=True) as jc_mock:
+            jc_mock.connect.return_value = 'bar'
+            env = connect_juju_client('foo', 1)
+        jc_mock.connect.assert_called_once_with(env_name='foo')
         self.assertEqual(env, 'bar')
 
-    def test_connect_juju_client_exception(self):
-        with patch('utils.jujuclient', autospec=True) as jc_mock:
-            jc_mock.Environment.connect.side_effect = Exception
-            env = connect_juju_client('foo')
-        jc_mock.Environment.connect.assert_called_once_with(env_name='foo')
-        self.assertEqual(env, None)
-
     def test_connect_juju_client_socket_timeout(self):
-        with patch('utils.jujuclient', autospec=True) as jc_mock:
-            jc_mock.Environment.connect.side_effect = socket.timeout
-            env = connect_juju_client('foo')
-        self.assertEqual(jc_mock.Environment.connect.mock_calls,
+        with patch('utils.env2', autospec=True) as jc_mock:
+            jc_mock.connect.side_effect = socket.timeout
+            env = connect_juju_client('foo', 2)
+        self.assertEqual(jc_mock.connect.mock_calls,
                          [call(env_name='foo'), call(env_name='foo'),
                           call(env_name='foo')])
         self.assertEqual(env, None)
