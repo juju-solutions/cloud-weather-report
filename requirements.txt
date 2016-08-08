@@ -1,6 +1,6 @@
 PyYAML>=3.11
 bundletester
-jujuclient
+jujuclient>=0.53.0
 Jinja2
 MarkupSafe
 mock
