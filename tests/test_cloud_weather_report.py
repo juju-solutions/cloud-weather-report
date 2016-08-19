@@ -3,70 +3,65 @@ from collections import namedtuple
 import json
 import os
 from StringIO import StringIO
-from tempfile import (
-    NamedTemporaryFile,
-)
 from datetime import datetime
-from unittest import TestCase
+from unittest import TestCase, skip
 
 from mock import (
     call,
     MagicMock,
     patch,
 )
-import yaml
 
-import cloud_weather_report
-from tests.common_test import (
-    setup_test_logging,
-    temp_cwd,
-)
-from tests.test_utils import make_fake_status
-from utils import (
-    generate_test_result,
-    temp_dir,
-    chdir,
-)
+with patch('deployer.utils.get_juju_major_version', return_value=1):
+    from cloudweatherreport import cloud_weather_report, model
+from . import common
+from .test_utils import make_fake_status
+from cloudweatherreport import utils
 
 
+@skip('This is going away')
 class TestCloudWeatherReport(TestCase):
     maxDiff = None
 
     def setUp(self):
-        setup_test_logging(self)
+        common.setup_test_logging(self)
 
     def test_parse_args_defaults(self):
-        with patch(
-            'cloud_weather_report.get_juju_major_version', autospec=True,
-                return_value=1) as gjmv_mock:
+        with patch('cloudweatherreport.cloud_weather_report.'
+                   'get_juju_major_version',
+                   autospec=True,
+                   return_value=1) as gjmv_mock:
             args = cloud_weather_report.parse_args(
                 ['aws', 'test_plan', '--test-id', '1234'])
         expected = Namespace(
             bundle=None, controller=['aws'], deployment=None, dryrun=False,
             exclude=None, failfast=True, juju_major_version=1,
-            log_level='INFO', no_destroy=False, result_output='result.html',
+            log_level='INFO', no_destroy=False, results_dir='results',
             skip_implicit=False, test_id='1234', test_pattern=None,
             test_plan='test_plan', testdir=os.getcwd(), tests_yaml=None,
-            verbose=False)
+            bucket=None, s3_creds=None, verbose=False)
         self.assertEqual(args, expected)
         gjmv_mock.assert_called_once_with()
 
-    def test_parse_args_set_all_options(self):
+    @patch.object(cloud_weather_report, 'get_juju_major_version')
+    def test_parse_args_set_all_options(self, get_juju_major_version):
+        get_juju_major_version.return_value = '3'
         args = cloud_weather_report.parse_args(
-            ['aws', 'gce', 'test_plan', '--result-output', 'result',
+            ['aws', 'gce', 'test_plan', '--results-dir', 'results',
              '--testdir', '/test/dir', '--bundle', 'foo-bundle',
              '--deployment', 'depl', '--no-destroy', '--log-level', 'debug',
              '--dry-run', '--verbose', '--allow-failure', '--skip-implicit',
              '--exclude', 'skip_test', '--test-id', '2345', '--tests-yaml',
-             'test_yaml_file', '--test-pattern', 'tp',
-             '--juju-major-version', '2'])
+             'test_yaml_file', '--test-pattern', 'tp', '--bucket', 'bucket',
+             '--s3-creds', 'creds.ini', '--juju-major-version', '2'])
         expected = Namespace(
             bundle='foo-bundle', controller=['aws', 'gce'], deployment='depl',
             dryrun=True, exclude=['skip_test'], failfast=False,
             juju_major_version=2, log_level='debug', no_destroy=True,
-            result_output='result', skip_implicit=True, test_id='2345',
+            results_dir='results', skip_implicit=True, test_id='2345',
             test_pattern='tp', test_plan='test_plan', testdir='/test/dir',
-            tests_yaml='test_yaml_file', verbose=True)
+            tests_yaml='test_yaml_file', verbose=True, bucket='bucket',
+            s3_creds='creds.ini')
         self.assertEqual(args, expected)
 
     def test_run_bundle_test(self):
@@ -74,10 +69,10 @@ class TestCloudWeatherReport(TestCase):
         test_plan = make_tst_plan()
         args = Namespace()
         with patch(
-                'cloud_weather_report.StringIO',
+                'cloudweatherreport.cloud_weather_report.StringIO',
                 autospec=True, return_value=io_output) as mock_ntf:
-            with patch('cloud_weather_report.tester.main',
-                       autospec=True, side_effect=self.fake_tester_main
+            with patch('cloudweatherreport.cloud_weather_report.tester.main',
+                       autospec=True, side_effect=self._fake_tester_main
                        ) as mock_tm:
                 output, status = cloud_weather_report.run_bundle_test(
                     args, 'foo', test_plan)
@@ -92,10 +87,10 @@ class TestCloudWeatherReport(TestCase):
         test_plan = None
         args = Namespace(testdir=None, juju_major_version=1)
         with patch(
-                'cloud_weather_report.StringIO',
+                'cloudweatherreport.cloud_weather_report.StringIO',
                 autospec=True, return_value=io_output) as mock_ntf:
-            with patch('cloud_weather_report.tester.main',
-                       autospec=True, side_effect=self.fake_tester_main
+            with patch('cloudweatherreport.cloud_weather_report.tester.main',
+                       autospec=True, side_effect=self._fake_tester_main
                        ) as mock_tm:
                 output, status = cloud_weather_report.run_bundle_test(
                     args, 'foo', test_plan)
@@ -112,15 +107,15 @@ class TestCloudWeatherReport(TestCase):
         args = Namespace()
         exc = 'File /path/ raise exception'
         with patch(
-                'cloud_weather_report.StringIO',
+                'cloudweatherreport.cloud_weather_report.StringIO',
                 autospec=True, return_value=io_output) as mock_ntf:
-            with patch('cloud_weather_report.tester.main',
+            with patch('cloudweatherreport.cloud_weather_report.tester.main',
                        autospec=True, side_effect=Exception
                        ) as mock_tm:
                 with patch('traceback.format_exc', return_value=exc) as mock_f:
                     output, status = cloud_weather_report.run_bundle_test(
                         args, 'foo', test_plan)
-        expected_result = generate_test_result(
+        expected_result = utils.generate_test_result(
             'Exception (foo):\nFile /path/ raise exception')
         self.assertEqual(output, expected_result)
         self.assertEqual(status, None)
@@ -138,15 +133,15 @@ class TestCloudWeatherReport(TestCase):
         args = Namespace(juju_major_version=1)
         exc = 'File /path/ raise exception'
         with patch(
-                'cloud_weather_report.StringIO',
+                'cloudweatherreport.cloud_weather_report.StringIO',
                 autospec=True, return_value=io_output) as mock_ntf:
-            with patch('cloud_weather_report.tester.main',
+            with patch('cloudweatherreport.cloud_weather_report.tester.main',
                        autospec=True, side_effect=Exception
                        ) as mock_tm:
                 with patch('traceback.format_exc', return_value=exc) as mock_f:
                         output, status = cloud_weather_report.run_bundle_test(
                             args, 'foo', test_plan, env=env)
-        expected_result = generate_test_result(
+        expected_result = utils.generate_test_result(
             'Exception (foo):\nFile /path/ raise exception', returncode=240,
             test="Provisioning Failure")
         self.assertEqual(output, expected_result)
@@ -165,15 +160,15 @@ class TestCloudWeatherReport(TestCase):
         args = Namespace(juju_major_version=1)
         exc = 'File /path/ raise exception'
         with patch(
-                'cloud_weather_report.StringIO',
+                'cloudweatherreport.cloud_weather_report.StringIO',
                 autospec=True, return_value=io_output) as mock_ntf:
-            with patch('cloud_weather_report.tester.main',
+            with patch('cloudweatherreport.cloud_weather_report.tester.main',
                        autospec=True, side_effect=Exception
                        ) as mock_tm:
                 with patch('traceback.format_exc', return_value=exc) as mock_f:
                     output, status = cloud_weather_report.run_bundle_test(
                         args, 'foo', test_plan, env=env)
-        expected_result = generate_test_result(
+        expected_result = utils.generate_test_result(
             'Exception (foo):\nFile /path/ raise exception', returncode=1)
         self.assertEqual(output, expected_result)
         self.assertEqual(status, None)
@@ -187,33 +182,32 @@ class TestCloudWeatherReport(TestCase):
     def test_main(self):
         status = self.make_status()
         run_bundle_test_p = patch(
-            'cloud_weather_report.run_bundle_test',
+            'cloudweatherreport.cloud_weather_report.run_bundle_test',
             autospec=True, return_value=(self.make_results(), status))
         juju_client_p = patch('utils.env2', autospec=True)
-        with NamedTemporaryFile() as html_output:
-            with NamedTemporaryFile() as json_output:
-                with NamedTemporaryFile() as test_plan_file:
-                    test_plan = make_tst_plan_file(test_plan_file.name)
-                    args = Namespace(controller=['aws'],
-                                     juju_major_version=2,
-                                     result_output=html_output.name,
-                                     test_plan=test_plan_file.name,
-                                     test_id='1234',
-                                     testdir='git',
-                                     verbose=False)
-                    get_filenames_p = patch(
-                        'cloud_weather_report.'
-                        'get_filenames', autospec=True, return_value=(
-                            html_output.name, json_output.name))
-                    with run_bundle_test_p as mock_rbt:
-                        with get_filenames_p as mock_gf:
-                            with juju_client_p as mock_jc:
-                                (mock_jc.connect.return_value.
-                                 info.return_value) = {"ProviderType": "ec2"}
-                                with patch('cloud_weather_report.shutil'):
-                                        cloud_weather_report.main(
-                                            args, test_plan)
+        with utils.temp_dir() as tempdir:
+            test_plan = make_tst_plan()
+            args = Namespace(controller=['aws'],
+                             juju_major_version=2,
+                             results_dir=tempdir,
+                             bucket=None,
+                             s3_creds=None,
+                             test_id='1234',
+                             testdir='git',
+                             verbose=False)
+            with run_bundle_test_p as mock_rbt:
+                with juju_client_p as mock_jc:
+                    mock_jc.connect.return_value.info.return_value = {
+                        "ProviderType": "ec2",
+                    }
+                    cloud_weather_report.main(args, test_plan)
+            html_filename = os.path.join(tempdir, 'git/1234/results.html')
+            json_filename = os.path.join(tempdir, 'git/1234/results.json')
+            assert os.path.exists(html_filename)
+            assert os.path.exists(json_filename)
+            with open(html_filename) as html_output:
                 html_content = html_output.read()
+            with open(json_filename) as json_output:
                 json_content = json.loads(json_output.read())
             self.assertRegexpMatches(html_content, '<title>git</title>')
             self.assertEqual(json_content["bundle"]["name"], 'git')
@@ -222,54 +216,44 @@ class TestCloudWeatherReport(TestCase):
         env = mock_jc.connect.return_value
         mock_rbt.assert_called_once_with(args=args, env_name='aws',
                                          test_plan=test_plan, env=env)
-        mock_gf.assert_called_once_with('git')
 
-    @patch('reporter.datetime')
+    @patch('cloudweatherreport.reporter.datetime')
     def test_main_multi_clouds(self, mdatetime):
         mdatetime.now.return_value = datetime(2016, 7, 13, 0, 0, 0)
         status = self.make_status()
         run_bundle_test_p = patch(
-            'cloud_weather_report.run_bundle_test',
+            'cloudweatherreport.cloud_weather_report.run_bundle_test',
             autospec=True, return_value=(self.make_results(), status))
         juju_client_p = patch('utils.env1', autospec=True)
-        run_action_p = patch('cloud_weather_report.run_action',
-                             return_value=self.make_benchmark_data())
-        find_unit_p = patch('cloud_weather_report.find_unit',
-                            return_value='unit/0')
-        with temp_dir() as tmp_path:
-            with chdir(tmp_path):
-                os.mkdir('results')
-                test_plan_file = 'test_plan.yaml'
-                html_file = 'results/result.html'
-                json_file = 'results/result.json'
-                test_plan = make_tst_plan_file(test_plan_file,
-                                               benchmark=True)
-                args = Namespace(controller=['aws', 'gce'],
-                                     juju_major_version=1,
-                                 result_output="result.html",
-                                 test_plan=test_plan_file,
-                                 test_id='1234',
-                                 testdir=None,
-                                 verbose=False)
-                get_filenames_p = patch(
-                    'cloud_weather_report.get_filenames',
-                    autospec=True,
-                    return_value=(html_file, json_file))
-                with run_bundle_test_p as mock_rbt, \
-                        get_filenames_p as mock_gf, \
-                        juju_client_p as mock_jc, \
-                        run_action_p as mock_ra, \
-                        find_unit_p:
-                    (mock_jc.Environment.connect.return_value.
-                     info.return_value) = {"ProviderType": "ec2"}
-                    cloud_weather_report.main(args, test_plan)
-                with open(json_file) as json_output:
-                    json_content = json.loads(json_output.read())
+        run_action_p = patch.object(cloud_weather_report, 'run_action',
+                                    return_value=self.make_benchmark_data())
+        find_unit_p = patch.object(cloud_weather_report, 'find_unit',
+                                   return_value='unit/0')
+        with utils.temp_dir() as tempdir:
+            test_plan = make_tst_plan(benchmark=True)
+            args = Namespace(controller=['aws', 'gce'],
+                             juju_major_version=1,
+                             results_dir=tempdir,
+                             bucket=None,
+                             s3_creds=None,
+                             test_id='1234',
+                             testdir=None,
+                             verbose=False)
+            with run_bundle_test_p as mock_rbt, \
+                    juju_client_p as mock_jc, \
+                    run_action_p as mock_ra, \
+                    find_unit_p:
+                (mock_jc.Environment.connect.return_value.
+                 info.return_value) = {"ProviderType": "ec2"}
+                cloud_weather_report.main(args, test_plan)
+            json_filename = os.path.join(tempdir, 'git/1234/results.json')
+            assert os.path.exists(json_filename)
+            with open(json_filename) as json_output:
+                json_content = json.loads(json_output.read())
         env = mock_jc.connect.return_value
         calls = [call(args=args, env_name='aws', test_plan=test_plan, env=env),
                  call(args=args, env_name='gce', test_plan=test_plan, env=env)]
         self.assertEqual(mock_rbt.mock_calls, calls)
-        mock_gf.assert_called_once_with('git')
         assert mock_ra.called
         test_data_dir = os.path.join(os.path.dirname(__file__), 'data')
         with open(os.path.join(test_data_dir, 'result-v1.json')) as fp:
@@ -287,19 +271,27 @@ class TestCloudWeatherReport(TestCase):
                         time: 30s
                         concurrency: 10
             """
-        test_plan = yaml.load(content)
+        test_plan = model.TestPlan.from_yaml(content)
         mock_client = MagicMock()
-        with patch('cloud_weather_report.run_action',
+        benchmark_data = self.make_benchmark_data()
+        with patch('cloudweatherreport.cloud_weather_report.run_action',
                    autospec=True,
-                   return_value=self.make_benchmark_data()) as mock_cr:
+                   return_value=benchmark_data) as mock_cr:
             result = cloud_weather_report.run_actions(
-                test_plan, mock_client, make_fake_status())
+                test_plan, MagicMock(test_id='test_id'),
+                mock_client, make_fake_status())
         calls = [call(mock_client, 'plugin/6', 'terasort',
                       action_param={"time": "30s", "concurrency": 10},
                       timeout=3600)]
         self.assertEqual(mock_cr.mock_calls, calls)
         self.assertEqual(result, [
-            {"terasort": self.make_benchmark_data()["meta"]["composite"]}])
+            model.BenchmarkResult(
+                name='terasort',
+                direction="desc",
+                units="ops/sec",
+                value="200",
+            ),
+        ])
 
     def test_run_actions_benchmark_with_no_param(self):
         content = """
@@ -307,18 +299,25 @@ class TestCloudWeatherReport(TestCase):
                 plugin/1:
                     terasort
             """
-        test_plan = yaml.load(content)
+        test_plan = model.TestPlan.from_yaml(content)
         mock_client = MagicMock()
-        with patch('cloud_weather_report.run_action',
+        with patch('cloudweatherreport.cloud_weather_report.run_action',
                    autospec=True,
                    return_value=self.make_benchmark_data()) as mock_cr:
             result = cloud_weather_report.run_actions(
-                test_plan, mock_client, make_fake_status())
+                test_plan, MagicMock(test_id='test_id'),
+                mock_client, make_fake_status())
         calls = [call(mock_client, 'plugin/7', 'terasort', action_param=None,
                       timeout=3600)]
         self.assertEqual(mock_cr.mock_calls, calls)
         self.assertEqual(result, [
-            {"terasort": self.make_benchmark_data()["meta"]["composite"]}])
+            model.BenchmarkResult(
+                name='terasort',
+                direction="desc",
+                units="ops/sec",
+                value="200",
+            ),
+        ])
 
     def test_run_actions_multi_params(self):
         content = """
@@ -329,23 +328,35 @@ class TestCloudWeatherReport(TestCase):
                 plugin/1:
                     terasort
             """
-        test_plan = yaml.load(content)
+        test_plan = model.TestPlan.from_yaml(content)
         mock_client = MagicMock()
         with patch(
-                'cloud_weather_report.run_action',
+                'cloudweatherreport.cloud_weather_report.run_action',
                 autospec=True,
                 side_effect=[self.make_benchmark_data(),
                              self.make_benchmark_data()]) as mock_cr:
             result = cloud_weather_report.run_actions(
-                test_plan, mock_client, make_fake_status())
+                test_plan, MagicMock(test_id='test_id'),
+                mock_client, make_fake_status())
         calls = [call(mock_client, 'plugin/6', 'terasort',
                       action_param={"time": "30s"}, timeout=3600),
                  call(mock_client, 'plugin/7', 'terasort', action_param=None,
                       timeout=3600)]
         self.assertItemsEqual(mock_cr.mock_calls, calls)
         self.assertEqual(result, [
-            {'terasort': self.make_benchmark_data()["meta"]["composite"]},
-            {'terasort': self.make_benchmark_data()["meta"]["composite"]}])
+            model.BenchmarkResult(
+                name='terasort',
+                direction="desc",
+                units="ops/sec",
+                value="200",
+            ),
+            model.BenchmarkResult(
+                name='terasort',
+                direction="desc",
+                units="ops/sec",
+                value="200",
+            ),
+        ])
 
     def test_run_actions_single_and_multi_params(self):
         content = """
@@ -356,56 +367,37 @@ class TestCloudWeatherReport(TestCase):
                 plugin/1:
                     terasort2
             """
-        test_plan = yaml.load(content)
+        test_plan = model.TestPlan.from_yaml(content)
         mock_client = MagicMock()
         with patch(
-                'cloud_weather_report.run_action',
+                'cloudweatherreport.cloud_weather_report.run_action',
                 autospec=True,
                 side_effect=[self.make_benchmark_data(),
                              self.make_benchmark_data()]) as mock_cr:
             result = cloud_weather_report.run_actions(
-                test_plan, mock_client, make_fake_status())
+                test_plan, MagicMock(test_id='test_id'),
+                mock_client, make_fake_status())
         calls = [call(mock_client, 'plugin/6', 'terasort',
                       action_param={"time": "30s"}, timeout=3600),
                  call(mock_client, 'plugin/7', 'terasort2',
                       action_param=None, timeout=3600)]
         self.assertItemsEqual(mock_cr.mock_calls, calls)
-        self.assertEqual(result, [
-            {"terasort": self.make_benchmark_data()["meta"]["composite"]},
-            {"terasort2": self.make_benchmark_data()["meta"]["composite"]}])
+        self.assertItemsEqual(result, [
+            model.BenchmarkResult(
+                name='terasort',
+                direction="desc",
+                units="ops/sec",
+                value="200",
+            ),
+            model.BenchmarkResult(
+                name='terasort2',
+                direction="desc",
+                units="ops/sec",
+                value="200",
+            ),
+        ])
 
-    def test_get_filenames(self):
-        with temp_dir() as temp:
-            with temp_cwd(temp):
-                h_file, j_file = cloud_weather_report.get_filenames('git')
-            static_path = os.path.join(temp, 'results', 'static')
-            self.assertTrue(os.path.isdir(static_path))
-            self.assertTrue(os.path.isdir(os.path.join(static_path, 'css')))
-            self.assertTrue(os.path.isdir(os.path.join(static_path, 'images')))
-            self.assertTrue(os.path.isdir(os.path.join(static_path, 'js')))
-        self.assertTrue(h_file.startswith('results/git-') and
-                        h_file.endswith('.html'))
-        self.assertTrue(j_file.startswith('results/git-') and
-                        j_file.endswith('.json'))
-
-    def test_get_filenames_url(self):
-        with temp_dir() as temp:
-            with temp_cwd(temp):
-                h_file, j_file = cloud_weather_report.get_filenames(
-                    'http://example.com/~git')
-        self.assertTrue(h_file.startswith(
-            'results/http___example_com__git') and h_file.endswith('.html'))
-        self.assertTrue(j_file.startswith(
-            'results/http___example_com__git') and j_file.endswith('.json'))
-
-        with temp_dir() as temp:
-            with temp_cwd(temp):
-                h_file, j_file = cloud_weather_report.get_filenames(
-                    'cs:~user/mysql-benchmark')
-        self.assertTrue(j_file.startswith(
-            'results/cs__user_mysql_benchmark') and j_file.endswith('.json'))
-
-    def fake_tester_main(self, args):
+    def _fake_tester_main(self, args):
         args.output.write('test passed'), 0
 
     def make_results(self):
@@ -458,14 +450,6 @@ class TestCloudWeatherReport(TestCase):
         }
 
 
-def make_tst_plan_file(filename, multi_test_plans=False, benchmark=False):
-    test_plan = make_tst_plan(multi_test_plans, benchmark)
-    content = yaml.dump(test_plan)
-    with open(filename, 'w') as yaml_file:
-        yaml_file.write(content)
-    return yaml.load(content)
-
-
 def make_tst_plan(multi_test_plans=False, benchmark=False):
     p = [
         {'tests': ['test1', 'test2'], 'bundle': 'git'},
@@ -473,9 +457,9 @@ def make_tst_plan(multi_test_plans=False, benchmark=False):
     ]
     if benchmark:
         p[0]['benchmark'] = {'unit/0': 'params'}
-    if multi_test_plans:
-        return p
-    return p[0]
+    if not multi_test_plans:
+        p = p[0]
+    return model.TestPlan.from_dict(p)
 
 
 class Env:
