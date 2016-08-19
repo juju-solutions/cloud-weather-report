@@ -4,3 +4,6 @@ jujuclient>=0.53.0
 Jinja2
 MarkupSafe
 mock
+flake8
+nose
+beautifulsoup4

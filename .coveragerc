@@ -1,0 +1,11 @@
+[run]
+include = cloudweatherreport/*
+
+[report]
+show_missing = True
+
+exclude_lines =
+  pragma: no cover
+    # Don't complain if tests don't hit defensive assertion code:
+    raise AssertionError
+    raise NotImplementedError

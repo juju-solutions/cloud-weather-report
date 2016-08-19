@@ -11,12 +11,11 @@ from unittest import TestCase
 from mock import call, patch
 import yaml
 
-from utils import (
+from cloudweatherreport import utils
+from cloudweatherreport.utils import (
     connect_juju_client,
     create_bundle_yaml,
     find_unit,
-    get_all_test_results,
-    get_benchmark_data,
     get_provider_name,
     is_machine_agent_started,
     iter_units,
@@ -25,15 +24,13 @@ from utils import (
     run_action,
     wait_for_action_complete,
 )
-from tests.common_test import (
-    setup_test_logging,
-)
+from . import common
 
 
 class TestUtil(TestCase):
 
     def setUp(self):
-        setup_test_logging(self)
+        common.setup_test_logging(self)
 
     def test_read_file(self):
         test_plan = {'tests': ['test1', 'test2'], 'bundle': 'bundle-url'}
@@ -148,59 +145,18 @@ class TestUtil(TestCase):
                     'secondary-namenode/3']
         self.assertItemsEqual(units, expected)
 
-    def test_iter_units_juju2(self):
-        status = make_fake_status_juju_2()
-        units = list(iter_units(status))
-        units = [x for x, _ in units]
-        self.assertEqual(units, ['mysql/0', 'wiki/0'])
-
-    def test_get_all_test_results(self):
-        temp = mkdtemp()
-        files = [os.path.join(temp, 'cs:git-2015-12-02T22:22:21-result.json'),
-                 os.path.join(temp, 'cs:git-2015-12-02T22:22:21-result.html'),
-                 os.path.join(temp, 'cs:git-2015-12-02T22:22:22-result.json'),
-                 os.path.join(temp, 'cs:foo-2015-12-02T22:22:23-result.json'),
-                 os.path.join(temp, 'cs:git-2015-12-02T22:22:25-result.json')]
-        index = 1
-        for f in files:
-            with open(f, 'w') as fp:
-                fp.write(make_fake_results(date=index))
-                index += 1
-        results = get_all_test_results('cs:git', temp)
-        self.assertEqual(len(results), 3)
-        self.assertItemsEqual([r['date'] for r in results], [1, 3, 5])
-        rmtree(temp)
-
-    def test_get_benchmark_data(self):
-        temp = mkdtemp()
-        files = [os.path.join(temp, 'cs:git-2015-12-02T22:22:21-result.json'),
-                 os.path.join(temp, 'cs:git-2015-12-02T22:22:22-result.json'),
-                 os.path.join(temp, 'cs:foo-2015-12-02T22:22:23-result.json'),
-                 os.path.join(temp, 'cs:git-2015-12-02T22:22:25-result.json')]
-        index = 1
-        for f in files:
-            with open(f, 'w') as fp:
-                fp.write(make_fake_results(date=index))
-                index += 1
-        values = get_benchmark_data('cs:git', temp, 'AWS')
-        self.assertItemsEqual(values, ['100', '100', '100'])
-        values = get_benchmark_data('cs:git', temp, 'Joyent')
-        self.assertItemsEqual(values, ['200', '200', '200'])
-        values = get_benchmark_data('cs:git', temp, 'GCE')
-        self.assertItemsEqual(values, [])
-        rmtree(temp)
-
     def test_connect_juju_client(self):
-        with patch('utils.env1', autospec=True) as jc_mock:
+        with patch('cloudweatherreport.utils.env1', autospec=True) as jc_mock:
             jc_mock.connect.return_value = 'bar'
             env = connect_juju_client('foo', 1)
         jc_mock.connect.assert_called_once_with(env_name='foo')
         self.assertEqual(env, 'bar')
 
     def test_connect_juju_client_socket_timeout(self):
-        with patch('utils.env2', autospec=True) as jc_mock:
-            jc_mock.connect.side_effect = socket.timeout
-            env = connect_juju_client('foo', 2)
+        with patch('cloudweatherreport.utils.env2', autospec=True) as jc_mock:
+            with patch.object(utils, 'get_juju_major_version', return_value=2):
+                jc_mock.connect.side_effect = socket.timeout
+                env = connect_juju_client('foo', 2)
         self.assertEqual(jc_mock.connect.mock_calls,
                          [call(env_name='foo'), call(env_name='foo'),
                           call(env_name='foo')])

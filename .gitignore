@@ -2,3 +2,7 @@
 .idea
 *.swp
 .coverage
+.tox
+__pycache__
+cover/
+cloud_weather_report.egg-info/

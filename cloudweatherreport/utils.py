@@ -1,4 +1,3 @@
-import codecs
 from contextlib import contextmanager
 from datetime import (
     datetime,
@@ -18,12 +17,58 @@ from time import sleep
 import traceback
 import uuid
 import yaml
+import requests
 
-from jujuclient.juju1.environment import Environment as env1
-from jujuclient.juju2.environment import Environment as env2
+import jujuclient.juju1.environment
+import jujuclient.juju2.environment
+import jujuclient.juju1.facades
+import jujuclient.juju2.facades
 
 
 PROVISIONING_ERROR_CODE = 240
+
+ISO_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
+
+
+def get_bundle_yaml(status):
+    if not status:
+        return None
+    if status.bundle_yaml:
+        return status.bundle_yaml
+    elif status.charm:
+        return create_bundle_yaml(status.charm.get("name"))
+    return None
+
+
+def serializer(obj):
+    """
+    Fall-back serializer.
+
+    Currently only handles datetime objects.
+    """
+    if isinstance(obj, datetime):
+        return obj.strftime(ISO_TIME_FORMAT)
+    else:
+        raise TypeError('%s is not serializable' % obj)
+
+
+def fetch_svg(bundle_yaml):
+    if not bundle_yaml:
+        return None
+    try:
+        r = requests.post('http://svg.juju.solutions', bundle_yaml)
+    except Exception:
+        logging.warn("Timeout exception from svg.juju.solution "
+                     "for \nbundle.yaml:\n{}".format(bundle_yaml),)
+        return None
+    if r.status_code != requests.codes.ok:
+        logging.warn("Could not generate svg. Response from "
+                     "svg.juju.solutions: \n"
+                     "Status code:{} \nContent: {}\n"
+                     "bundle.yaml:\n{}".format(r.status_code, r.content,
+                                               bundle_yaml))
+        return None
+    return r.content
 
 
 def read_file(file_path, file_type=None):
@@ -149,37 +194,6 @@ def find_unit(unit, status):
         return None
 
 
-def get_all_test_results(bundle_name, dir_path):
-    files = [os.path.join(dir_path, f) for f in os.listdir(dir_path)
-             if f.startswith(bundle_name) and f.endswith('.json')]
-    results = []
-    for f in files:
-        with codecs.open(f, 'r', encoding='utf-8') as fp:
-            results.append(json.load(fp))
-    results = sorted(results, key=lambda r: r["date"])
-    return results
-
-
-def get_benchmark_data(file_prefix, dir_path, provider_name):
-    results = get_all_test_results(file_prefix, dir_path)
-    values = []
-    for result in results:
-        if result.get('results'):
-            for test_result in result['results']:
-                if (test_result.get('benchmarks') and
-                   provider_name == test_result['provider_name']):
-                    try:
-                        values.append(
-                            test_result['benchmarks'][0].values()[0]["value"])
-                    except (KeyError, AttributeError):
-                        raise Exception('Non standardized benchmark format.')
-    return values
-
-
-def file_prefix(bundle_name):
-    return "".join([c if c.isalnum() else "_" for c in bundle_name])
-
-
 @contextmanager
 def temp_dir(parent=None, keep=False):
     directory = mkdtemp(dir=parent)
@@ -204,6 +218,12 @@ def get_juju_major_version():
     return int(subprocess.check_output(["juju", "version"]).split(b'.')[0])
 
 
+def get_versioned_juju_api(version=None):
+    if version is None:
+        version = get_juju_major_version()
+    return jujuclient.juju1 if version == 1 else jujuclient.juju2
+
+
 def generate_test_result(output, test='Exception', returncode=1, duration=0,
                          suite=''):
     results = {
@@ -220,10 +240,11 @@ def generate_test_result(output, test='Exception', returncode=1, duration=0,
     return json.dumps(results)
 
 
-def connect_juju_client(env_name, juju_major_version, retries=3, logging=None):
+def connect_juju_client(env_name, juju_major_version=None, retries=3,
+                        logging=None):
     """Connect to jujuclient."""
     env = None
-    juju_client = env1 if juju_major_version == 1 else env2
+    juju_client = get_versioned_juju_api().environment.Environment
     for _ in xrange(retries):
         try:
             env = juju_client.connect(env_name=env_name)
@@ -256,5 +277,7 @@ def generate_test_id():
     return uuid.uuid4().hex
 
 
-def get_juju_client_by_version(version):
-    return jujuclient.juju1 if version == 1 else jujuclient.juju2
+def humanize_date(value, input_format=ISO_TIME_FORMAT):
+    if isinstance(value, basestring):
+        value = datetime.strptime(value, input_format)
+    return value.strftime("%b %d, %Y at %H:%M")

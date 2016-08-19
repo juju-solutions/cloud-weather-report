@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Recent Results
+{% endblock %}
+
+{% from "macros.html" import display_status_img with context %}
+
+{% block bundle_title %}
+    <h2> Recent Results </h2>
+{% endblock %}
+
+
+{% block content %}
+
+    <div class="twelve-col">
+
+        <table>
+            <thead>
+            <tr>
+                <th scope="col">Bundle</th>
+                <th scope="col">Date</th>
+                <th scope="col">Test Results</th>
+            </tr>
+            </thead>
+
+            {% for report in report_index.reports %}
+                <tr class="result">
+                    <td class="bundle-name" scope="col">
+                        <a href="{{ report.filename_html }}">{{ report.bundle_name }}</a>
+                    </td>
+                    <td class="bundle-date">
+                        <a href="{{ report.filename_html }}">{{ report.date|humanize_date }}</a>
+                    </td>
+                    <td class="bundle-status">
+                        <a href="{{ report.filename_html }}">
+                        {% for provider in report_index.providers %}
+                            <table class="outcome">
+                                <tr><td>{{ provider }}</td></tr>
+                                <tr>
+                                    <td>{{ display_status_img(report.results[provider]) }}</td>
+                                </tr>
+                            </table>
+                        {% endfor %}
+                        </a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+{% endblock %}
