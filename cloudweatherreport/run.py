@@ -146,9 +146,9 @@ class Runner(Thread):
         svg_data = self.fetch_svg(test_result.bundle_yaml)
         with datastore.lock():
             index = self.load_index(datastore)
-            report = self.load_report(index, test_plan)
+            report = self.load_report(datastore, index, test_plan)
             report.upsert_result(test_result)
-            report.add_benchmarks(benchmark_results)
+            report.upsert_benchmarks(benchmark_results)
             datastore.write(index.filename_json, index.as_json())
             datastore.write(index.filename_html, index.as_html())
             datastore.write(report.filename_json, report.as_json())
@@ -167,6 +167,8 @@ class Runner(Thread):
         self.args.environment = env_name
         self.args.reporter = 'json'
         self.args.testdir = test_plan.bundle
+        if test_plan.bundle_file:
+            self.args.bundle = test_plan.bundle_file
         status = tester.main(self.args)
         result = model.SuiteResult.from_bundletester_output(
             env.provider_name,

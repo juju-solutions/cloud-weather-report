@@ -265,6 +265,7 @@ class TestPlan(BaseModel):
         'benchmarks': list([BenchmarkPlan]),
         'bundle': basestring,
         'bundle_file': basestring,
+        'bundle_name': basestring,
         'tests': list([basestring]),
     }
 
