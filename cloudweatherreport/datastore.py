@@ -105,7 +105,7 @@ class DataStore(object):
             if wait_secs < 10:
                 wait_secs += 1
         yield
-        self.delete(lock_file)
+        self.delete(lock_filename)
 
     def _active_lock_filename(self, path):
         for filename in self.list(path):
@@ -154,6 +154,13 @@ class LocalDataStore(DataStore):
             os.makedirs(dirname)
         with open(filename, 'w') as fp:
             fp.write(contents.encode(encoding))
+
+    def delete(self, filename):
+        """
+        Delete a file from the data store.
+        """
+        filename = self._path(filename)
+        os.remove(filename)
 
 
 class S3DataStore(DataStore):
@@ -217,3 +224,10 @@ class S3DataStore(DataStore):
             'Content-Type': content_type or 'text/plain',
             'Content-Encoding': encoding,
         })
+
+    def delete(self, filename):
+        """
+        Delete a file from the data store.
+        """
+        if self.exists(filename):
+            self.bucket.delete_key(filename)
