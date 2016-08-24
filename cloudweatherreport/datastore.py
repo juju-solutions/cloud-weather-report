@@ -92,8 +92,7 @@ class DataStore(object):
         # consistency to ensure it will be immediately visible to others,
         # and their lock files to us.
         lock_filename = '.lock.{}'.format(uuid4())
-        lock_filepath = self._path(path, lock_filename)
-        self.write(lock_filepath, '')
+        self.write(lock_filename, '')
         # wait until we own the earliest lock file, and thus the lock
         wait_secs = 1
         total_waited = 0
@@ -106,7 +105,7 @@ class DataStore(object):
             if wait_secs < 10:
                 wait_secs += 1
         yield
-        self.delete(lock_filepath)
+        self.delete(lock_file)
 
     def _active_lock_filename(self, path):
         for filename in self.list(path):
