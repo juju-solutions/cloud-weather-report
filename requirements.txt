@@ -7,3 +7,4 @@ mock
 flake8
 nose
 beautifulsoup4
+boto>=2.42.0,<3.0.0

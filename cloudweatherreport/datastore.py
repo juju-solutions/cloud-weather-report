@@ -4,12 +4,7 @@ from contextlib import contextmanager
 from ConfigParser import ConfigParser
 from mimetypes import MimeTypes
 from uuid import uuid4
-
-try:
-    from boto.s3.connection import S3Connection
-except ImportError:
-    # boto is optional
-    S3Connection = None
+from boto.s3.connection import S3Connection
 
 
 class TimeoutError(Exception):
@@ -182,7 +177,10 @@ class S3DataStore(DataStore):
     def bucket(self):
         if self._bucket is None:
             conn = S3Connection(self.access_key, self.secret_key)
-            self._bucket = conn.get_bucket(self.bucket_name)
+            if conn.lookup(self.bucket_name):
+                self._bucket = conn.get_bucket(self.bucket_name)
+            else:
+                self._bucket = conn.create_bucket(self.bucket_name)
         return self._bucket
 
     def list(self, path=None):
@@ -196,7 +194,8 @@ class S3DataStore(DataStore):
         def mtime(keyobj):
             return keyobj.last_modified
         paths = self.bucket.list(basepath, '/')
-        return [key.name.split('/')[-1] for key in sorted(paths, key=mtime)]
+        files = [k for k in paths if hasattr(k, 'last_modified')]
+        return [key.name.split('/')[-1] for key in sorted(files, key=mtime)]
 
     def exists(self, filename):
         """
@@ -230,4 +229,4 @@ class S3DataStore(DataStore):
         Delete a file from the data store.
         """
         if self.exists(filename):
-            self.bucket.delete_key(filename)
+            self.bucket.delete_key(self._path(filename))
