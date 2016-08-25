@@ -149,6 +149,7 @@ class Runner(Thread):
             report = self.load_report(datastore, index, test_plan)
             report.upsert_result(test_result)
             report.upsert_benchmarks(benchmark_results)
+            index.upsert_report(report)
             datastore.write(index.filename_json, index.as_json())
             datastore.write(index.filename_html, index.as_html())
             datastore.write(report.filename_json, report.as_json())
