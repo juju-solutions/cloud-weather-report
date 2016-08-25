@@ -1,5 +1,2 @@
-bundle: cs:mongodb
-benchmark:
-    mongodb:
-        perf:
-            runtime: 60
+bundle: cs:git
+bundle_name: git
