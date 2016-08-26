@@ -335,7 +335,7 @@ class BundleInfo(BaseModel):
 class BenchmarkProviderResult(BaseModel):
     fields = {
         'provider': basestring,
-        'value': float,
+        'value': basestring,
     }
 
 

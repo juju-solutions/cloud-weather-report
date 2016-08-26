@@ -1,12 +1,12 @@
 from __future__ import print_function
 
+import multiprocessing as mp
 import argparse
 from cStringIO import StringIO
 from datetime import datetime
 import logging
 import os
 import traceback
-from threading import Thread
 from copy import copy
 
 from bundletester import tester
@@ -72,7 +72,7 @@ def parse_args(argv=None):
     return options
 
 
-class Runner(Thread):
+class Runner(mp.Process):
     def __init__(self, controller, cli_args, *args, **kwargs):
         super(Runner, self).__init__(*args, **kwargs)
         self.controller = controller
@@ -220,12 +220,12 @@ class Runner(Thread):
 
 def entry_point():
     args = parse_args()
-    threads = []
+    processes = []
     for controller in args.controllers:
-        threads.append(Runner(controller, args))
-        threads[-1].start()
-    for thread in threads:
-        thread.join()
+        processes.append(Runner(controller, args))
+        processes[-1].start()
+    for p in processes:
+        p.join()
 
 
 if __name__ == '__main__':
