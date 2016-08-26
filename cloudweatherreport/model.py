@@ -208,7 +208,9 @@ class BaseModel(object):
         self = cls()
 
         def _convert(field_type, value):
-            if issubclass(field_type, BaseModel):
+            if not field_type:
+                return None
+            elif issubclass(field_type, BaseModel):
                 return field_type.from_dict(value)
             elif issubclass(field_type, datetime) and \
                     isinstance(value, basestring):
@@ -265,6 +267,7 @@ class TestPlan(BaseModel):
         'benchmarks': list([BenchmarkPlan]),
         'bundle': basestring,
         'bundle_file': basestring,
+        'bundle_name': basestring,
         'tests': list([basestring]),
     }
 
@@ -332,7 +335,7 @@ class BundleInfo(BaseModel):
 class BenchmarkProviderResult(BaseModel):
     fields = {
         'provider': basestring,
-        'value': float,
+        'value': basestring,
     }
 
 
@@ -678,6 +681,13 @@ class ReportIndexItem(BaseModel):
             test_id=self.test_id,
             bundle=BundleInfo(name=self.bundle_name),
         ).filename_html
+
+    @property
+    def filename_json(self):
+        return Report(
+            test_id=self.test_id,
+            bundle=BundleInfo(name=self.bundle_name),
+        ).filename_json
 
 
 class ReportIndex(BaseModel):
