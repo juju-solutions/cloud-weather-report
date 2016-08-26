@@ -68,9 +68,9 @@ class DataStore(object):
         raise NotImplementedError()
 
     @contextmanager
-    def lock(self, path=None, timeout=5*60):
+    def lock(self, timeout=5*60):
         """
-        Context manager that acquires a lock for the given path.
+        Context manager that acquires a lock for the datastore.
 
         Blocks until the lock is acquired or the timeout (in seconds) is
         reached (at which a `TimeoutError` is raised).
@@ -86,24 +86,27 @@ class DataStore(object):
         # Optimistically create our unique lock file.  This relies on RAW
         # consistency to ensure it will be immediately visible to others,
         # and their lock files to us.
-        lock_filename = '.lock.{}'.format(uuid4())
+        lock_id = uuid4()
+        lock_filename = '.lock.{}'.format(lock_id)
         self.write(lock_filename, '')
-        # wait until we own the earliest lock file, and thus the lock
-        wait_secs = 1
-        total_waited = 0
-        while self._active_lock_filename(path) != lock_filename:
-            sleep(wait_secs)
-            total_waited += wait_secs
-            if total_waited > timeout:
-                raise TimeoutError('Timed out waiting for lock')
-            # increase sleep time a second at a time, up to 10s
-            if wait_secs < 10:
-                wait_secs += 1
-        yield
-        self.delete(lock_filename)
+        try:
+            # wait until we own the earliest lock file, and thus the lock
+            wait_secs = 1
+            total_waited = 0
+            while self._active_lock_filename() != lock_filename:
+                sleep(wait_secs)
+                total_waited += wait_secs
+                if total_waited >= timeout:
+                    raise TimeoutError('Timed out waiting for lock')
+                # increase sleep time a second at a time, up to 10s
+                if wait_secs < 10:
+                    wait_secs += 1
+            yield lock_id
+        finally:
+            self.delete(lock_filename)
 
-    def _active_lock_filename(self, path):
-        for filename in self.list(path):
+    def _active_lock_filename(self):
+        for filename in self.list():
             if filename.startswith('.lock.'):
                 return filename
 
