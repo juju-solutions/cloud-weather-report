@@ -28,20 +28,20 @@ class TestDataStore(TestCase):
 
         # test no contest
         ds_alf.return_value = '.lock.uuid'
-        with ds.lock('path'):
-            ds_write.assert_called_once_with('prefix/path/.lock.uuid', '')
-            ds_alf.assert_called_once_with('path')
+        with ds.lock():
+            ds_write.assert_called_once_with('.lock.uuid', '')
+            ds_alf.assert_called_once_with()
             assert not ds_sleep.called
             assert not ds_delete.called
-        ds_delete.assert_called_once_with('prefix/path/.lock.uuid')
+        ds_delete.assert_called_once_with('.lock.uuid')
 
         # test timeout
         ds_delete.reset_mock()
         ds_alf.return_value = '.lock.other'
         with self.assertRaises(datastore.TimeoutError):
-            with ds.lock('path', 60):
+            with ds.lock(60):
                 pass
-        assert not ds_delete.called
+        assert ds_delete.called
         self.assertEqual(ds_sleep.call_args_list, [
             mock.call(1),
             mock.call(2),
@@ -66,7 +66,7 @@ class TestDataStore(TestCase):
             mock.call(1),
             mock.call(2),
         ])
-        ds_delete.assert_called_once_with('prefix/path/.lock.uuid')
+        ds_delete.assert_called_once_with('.lock.uuid')
 
     @mock.patch.object(datastore.DataStore, 'list')
     def test_active_lock_filename(self, ds_list):
@@ -77,12 +77,12 @@ class TestDataStore(TestCase):
             'qux',
         ]
         ds = datastore.DataStore('prefix')
-        self.assertEquals(ds._active_lock_filename('foo'), '.lock.one')
+        self.assertEquals(ds._active_lock_filename(), '.lock.one')
         ds_list.return_value = [
             'bar',
             'qux',
         ]
-        self.assertIsNone(ds._active_lock_filename('foo'))
+        self.assertIsNone(ds._active_lock_filename())
 
 
 class TestLocalDataStore(TestCase):
@@ -135,6 +135,31 @@ class TestLocalDataStore(TestCase):
         self.ds.write('new_path/new', 'new')
         self.assertEqual(self.ds.read('new_path/new'), 'new')
 
+    def test_delete(self):
+        self.ds.write('test_del', '')
+        assert self.ds.exists('test_del')
+        self.ds.delete('test_del')
+        assert not self.ds.exists('test_del')
+
+    def test_lock(self):
+        # test lock
+        with self.ds.lock(timeout=1) as lock_id:
+            assert self.ds.exists('.lock.{}'.format(lock_id))
+        assert not self.ds.exists('.lock.{}'.format(lock_id))
+        # test lock gets cleaned up on error
+        try:
+            with self.ds.lock(timeout=1) as lock_id:
+                assert self.ds.exists('.lock.{}'.format(lock_id))
+                raise ValueError('test')
+        except ValueError:
+            pass
+        assert not self.ds.exists('.lock.{}'.format(lock_id))
+        # test lock timeout
+        with self.ds.lock(timeout=1):
+            with self.assertRaises(datastore.TimeoutError):
+                with self.ds.lock(timeout=1):
+                    self.fail('Secondary lock should fail')
+
 
 class TestS3DataStore(TestCase):
     @classmethod
@@ -165,11 +190,19 @@ class TestS3DataStore(TestCase):
         self.assertEqual(self.ds.secret_key, 'secret')
 
     def test_bucket(self):
+        self.S3Connection.return_value.get_bucket.return_value = 'old'
+        self.S3Connection.return_value.create_bucket.return_value = 'new'
         assert not self.S3Connection.called
-        self.assertIsNone(self.ds._bucket)
-        self.assertIsInstance(self.ds.bucket, mock.MagicMock)
+        self.assertEqual(self.ds.bucket, 'old')
         self.S3Connection.assert_called_once_with('access', 'secret')
-        self.S3Connection().get_bucket.assert_called_once_with('bucket')
+
+        self.S3Connection.reset_mock()
+        self.assertEqual(self.ds.bucket, 'old')
+        assert not self.S3Connection.called
+
+        self.S3Connection.return_value.lookup.return_value = None
+        self.ds._bucket = None
+        self.assertEqual(self.ds.bucket, 'new')
 
     def test_list(self):
         def key(name, modified):
@@ -220,3 +253,7 @@ class TestS3DataStore(TestCase):
                 'Content-Type': 'text/x-yaml',
                 'Content-Encoding': 'ascii',
             })
+
+    def test_delete(self):
+        self.ds.delete('test_del')
+        self.ds.bucket.delete_key.assert_called_once_with('prefix/test_del')
