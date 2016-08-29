@@ -2,6 +2,7 @@ import os
 import shutil
 from unittest import TestCase
 from tempfile import mkdtemp
+from time import sleep
 
 import mock
 
@@ -29,11 +30,11 @@ class TestDataStore(TestCase):
         # test no contest
         ds_alf.return_value = '.lock.uuid'
         with ds.lock('path'):
-            ds_write.assert_called_once_with('prefix/path/.lock.uuid', '')
+            ds_write.assert_called_once_with('.lock.uuid', '')
             ds_alf.assert_called_once_with('path')
             assert not ds_sleep.called
             assert not ds_delete.called
-        ds_delete.assert_called_once_with('prefix/path/.lock.uuid')
+        ds_delete.assert_called_once_with('.lock.uuid')
 
         # test timeout
         ds_delete.reset_mock()
@@ -66,7 +67,7 @@ class TestDataStore(TestCase):
             mock.call(1),
             mock.call(2),
         ])
-        ds_delete.assert_called_once_with('prefix/path/.lock.uuid')
+        ds_delete.assert_called_once_with('.lock.uuid')
 
     @mock.patch.object(datastore.DataStore, 'list')
     def test_active_lock_filename(self, ds_list):
@@ -98,6 +99,7 @@ class TestLocalDataStore(TestCase):
         ]
         for filename in filenames:
             with open('/'.join([cls.prefix, filename]), 'w') as fp:
+                sleep(0.05)
                 fp.write(filename)
         cls.ds = datastore.LocalDataStore(cls.prefix)
 

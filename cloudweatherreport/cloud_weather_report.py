@@ -1,29 +1,16 @@
 from __future__ import print_function
 
 import argparse
-from cStringIO import StringIO
 import logging
 import os
 import traceback
-from datetime import datetime
-
-from bundletester import tester
-import jujuclient
 
 from cloudweatherreport.datastore import DataStore
-from cloudweatherreport import model
 from utils import (
-    PROVISIONING_ERROR_CODE,
     configure_logging,
     connect_juju_client,
-    create_bundle_yaml,
     generate_test_result,
-    get_juju_major_version,
     generate_test_id,
-    find_unit,
-    get_provider_name,
-    is_machine_agent_started,
-    run_action,
     fetch_svg,
 )
 
@@ -53,8 +40,6 @@ def bundle_tester_args(parser):
                         "override the one in the charm or bundle "
                         "being tested.")
     parser.add_argument('--test-pattern', dest="test_pattern")
-    parser.add_argument('--juju-major-version', type=int,
-                        default=get_juju_major_version())
     parser.add_argument('--test-id', dest="test_id", help="Test ID.",
                         default=generate_test_id())
     return parser
@@ -75,9 +60,6 @@ def parse_args(argv=None):
     return parser.parse_args(argv)
 
 
-
-
-
 def main(args, test_plan):
     log_level = logging.DEBUG if args.verbose else logging.INFO
     configure_logging(log_level)
@@ -90,8 +72,8 @@ def main(args, test_plan):
 
     for env_name in args.controller:
         try:
-            env = connect_juju_client(
-                env_name, args.juju_major_version, logging=logging)
+            connect_juju_client(
+                env_name, logging=logging)
         except Exception:
             tb = traceback.format_exc()
             error = 'Jujuclient exception({}): {}'.format(env_name, tb)
