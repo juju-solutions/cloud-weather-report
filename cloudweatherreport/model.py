@@ -1,6 +1,7 @@
 import re
 import json
 import yaml
+import logging
 from datetime import datetime
 from base64 import b64encode
 
@@ -8,6 +9,9 @@ from pkg_resources import resource_filename
 import jinja2
 
 from cloudweatherreport import utils
+
+
+log = logging.getLogger(__name__)
 
 
 # ******** Base types
@@ -335,8 +339,16 @@ class BundleInfo(BaseModel):
 class BenchmarkProviderResult(BaseModel):
     fields = {
         'provider': basestring,
-        'value': basestring,
+        'value': float,
     }
+
+    @classmethod
+    def from_dict(cls, value):
+        if isinstance(value.get('value'), basestring):
+            # actions don't preserve type, so the value comes
+            # in as a string and needs to be coerced to a float
+            value['value'] = float(value['value'])
+        return super(BenchmarkProviderResult, cls).from_dict(value)
 
 
 class BenchmarkResult(BaseModel):
@@ -387,6 +399,13 @@ class Benchmark(BaseModel):
 
     @classmethod
     def from_action(cls, action_result):
+        try:
+            # actions don't preserve type, so coerce to float
+            value = float(action_result['value'])
+        except ValueError as e:
+            log.warn('Skipping malformed benchmark value for %s: %s',
+                     action_result['name'], e.message)
+            value = None
         return cls(
             name=action_result['name'],
             direction=action_result['direction'],
@@ -398,7 +417,7 @@ class Benchmark(BaseModel):
                     provider_results=[
                         BenchmarkProviderResult(
                             provider=action_result['provider'],
-                            value=action_result['value'],
+                            value=value,
                         ),
                     ],
                 ),
