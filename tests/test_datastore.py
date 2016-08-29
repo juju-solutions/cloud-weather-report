@@ -92,15 +92,17 @@ class TestLocalDataStore(TestCase):
         cls.prefix = mkdtemp()
         os.mkdir('/'.join([cls.prefix, 'path']))
         filenames = [
-            'file1',
             'file2',
+            'file1',
             'path/file3',
             'path/file4',
         ]
         for filename in filenames:
             with open('/'.join([cls.prefix, filename]), 'w') as fp:
-                sleep(0.05)
                 fp.write(filename)
+            # sleep a tiny amount to ensure that the mtime on the files
+            # differs enough to make the time the primary sort criteria
+            sleep(0.05)
         cls.ds = datastore.LocalDataStore(cls.prefix)
 
     @classmethod
@@ -109,8 +111,8 @@ class TestLocalDataStore(TestCase):
 
     def test_list(self):
         self.assertEqual(self.ds.list(), [
-            'file1',
             'file2',
+            'file1',
             'path',
         ])
         self.assertEqual(self.ds.list('path'), [
@@ -118,6 +120,15 @@ class TestLocalDataStore(TestCase):
             'file4',
         ])
         self.assertEqual(self.ds.list('other'), [])
+        with mock.patch.object(os, 'stat') as mstat:
+            # test all files having same mtime and ensure
+            # they fall back to sorting by name
+            mstat.return_value = mock.Mock(st_mtime=1)
+            self.assertEqual(self.ds.list(), [
+                'file1',
+                'file2',
+                'path',
+            ])
 
     def test_exists(self):
         self.assertTrue(self.ds.exists('file1'))
@@ -157,10 +168,14 @@ class TestLocalDataStore(TestCase):
             pass
         assert not self.ds.exists('.lock.{}'.format(lock_id))
         # test lock timeout
-        with self.ds.lock(timeout=1):
-            with self.assertRaises(datastore.TimeoutError):
-                with self.ds.lock(timeout=1):
-                    self.fail('Secondary lock should fail')
+        with mock.patch.object(datastore, 'uuid4') as muuid4:
+            # ensure that the lock files are ordered as we expect,
+            # even if they end up with the same mtime
+            muuid4.side_effect = ['1', '2']
+            with self.ds.lock(timeout=1):
+                with self.assertRaises(datastore.TimeoutError):
+                    with self.ds.lock(timeout=1):
+                        self.fail('Secondary lock should fail')
 
 
 class TestS3DataStore(TestCase):
