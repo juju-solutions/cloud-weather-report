@@ -342,14 +342,14 @@ class TestBenchmark(TestCase):
             'units': 'bm_units',
             'test_id': 'bm_tid',
             'provider': 'bm_prov',
-            'value': 1.5,
+            'value': '1.5',
         })
         self.assertEqual(bm.name, 'bm_name')
         self.assertEqual(bm.direction, 'bm_dir')
         self.assertEqual(bm.units, 'bm_units')
         self.assertEqual(bm.results[0].test_id, 'bm_tid')
         self.assertEqual(bm.results[0].provider_results[0].provider, 'bm_prov')
-        self.assertEqual(bm.results[0].provider_results[0].value, 1.5)
+        self.assertEqual(bm.results[0].provider_results[0].value, '1.5')
 
     def test_providers(self):
         bm = model.Benchmark(
@@ -387,24 +387,24 @@ class TestBenchmark(TestCase):
                     test_id='test_1',
                     provider_results=[
                         model.BenchmarkProviderResult(provider='aws',
-                                                      value=2.0),
+                                                      value='2.0'),
                         model.BenchmarkProviderResult(provider='gce',
-                                                      value=1.5),
+                                                      value='1.5'),
                     ]),
                 model.BenchmarkResult(
                     test_id='test_2',
                     provider_results=[
                         model.BenchmarkProviderResult(provider='gce',
-                                                      value=0.5),
+                                                      value='0.5'),
                         model.BenchmarkProviderResult(provider='azure',
-                                                      value=2.0),
+                                                      value='2.0'),
                     ]),
             ])
         self.assertEqual(bm.as_chart(), {
             'title': 'terasort',
             'labels': ['test_1', 'test_2'],
-            'min': 0.5,
-            'max': 2.0,
+            'min': '0.5',
+            'max': '2.0',
             'datasets': [
                 {
                     'label': 'aws',
@@ -415,7 +415,7 @@ class TestBenchmark(TestCase):
                     'lineTension': 0,
                     'spanGaps': True,
                     'data': [
-                        2.0,
+                        '2.0',
                         None,
                     ],
                 },
@@ -429,7 +429,7 @@ class TestBenchmark(TestCase):
                     'spanGaps': True,
                     'data': [
                         None,
-                        2.0,
+                        '2.0',
                     ],
                 },
                 {
@@ -441,8 +441,8 @@ class TestBenchmark(TestCase):
                     'lineTension': 0,
                     'spanGaps': True,
                     'data': [
-                        1.5,
-                        0.5,
+                        '1.5',
+                        '0.5',
                     ],
                 },
             ]})
@@ -659,11 +659,11 @@ class TestReport(TestCase):
                             provider_results=[
                                 model.BenchmarkProviderResult(
                                     provider='aws',
-                                    value=1.1,
+                                    value='1.1',
                                 ),
                                 model.BenchmarkProviderResult(
                                     provider='gce',
-                                    value=0.5,
+                                    value='0.5',
                                 ),
                             ]),
                         model.BenchmarkResult(
@@ -671,7 +671,7 @@ class TestReport(TestCase):
                             provider_results=[
                                 model.BenchmarkProviderResult(
                                     provider='aws',
-                                    value=1.2,
+                                    value='1.2',
                                 ),
                             ]),
                         model.BenchmarkResult(
@@ -679,11 +679,11 @@ class TestReport(TestCase):
                             provider_results=[
                                 model.BenchmarkProviderResult(
                                     provider='aws',
-                                    value=1.2,
+                                    value='1.2',
                                 ),
                                 model.BenchmarkProviderResult(
                                     provider='gce',
-                                    value=0.9,
+                                    value='0.9',
                                 ),
                             ]),
                         model.BenchmarkResult(
@@ -691,11 +691,11 @@ class TestReport(TestCase):
                             provider_results=[
                                 model.BenchmarkProviderResult(
                                     provider='aws',
-                                    value=1.0,
+                                    value='1.0',
                                 ),
                                 model.BenchmarkProviderResult(
                                     provider='gce',
-                                    value=1.2,
+                                    value='1.2',
                                 ),
                             ]),
                     ]),
@@ -707,7 +707,7 @@ class TestReport(TestCase):
                             provider_results=[
                                 model.BenchmarkProviderResult(
                                     provider='aws',
-                                    value=2.1,
+                                    value='2.1',
                                 ),
                             ]),
                         model.BenchmarkResult(
@@ -715,7 +715,7 @@ class TestReport(TestCase):
                             provider_results=[
                                 model.BenchmarkProviderResult(
                                     provider='aws',
-                                    value=2.2,
+                                    value='2.2',
                                 ),
                             ]),
                     ]),
@@ -812,7 +812,7 @@ class TestReport(TestCase):
                     provider_results=[
                         model.BenchmarkProviderResult(
                             provider='aws',
-                            value=1.0,
+                            value='1.0',
                         ),
                     ],
                 ),
@@ -826,7 +826,7 @@ class TestReport(TestCase):
                     provider_results=[
                         model.BenchmarkProviderResult(
                             provider='aws',
-                            value=1.0,
+                            value='1.0',
                         ),
                     ],
                 ),
@@ -840,7 +840,7 @@ class TestReport(TestCase):
                     provider_results=[
                         model.BenchmarkProviderResult(
                             provider='gce',
-                            value=1.0,
+                            value='1.0',
                         ),
                     ],
                 ),
@@ -854,11 +854,11 @@ class TestReport(TestCase):
                     provider_results=[
                         model.BenchmarkProviderResult(
                             provider='aws',
-                            value=1.0,
+                            value='1.0',
                         ),
                         model.BenchmarkProviderResult(
                             provider='gce',
-                            value=1.0,
+                            value='1.0',
                         ),
                     ],
                 ),
@@ -872,7 +872,7 @@ class TestReport(TestCase):
                     provider_results=[
                         model.BenchmarkProviderResult(
                             provider='aws',
-                            value=2.0,
+                            value='2.0',
                         ),
                     ],
                 ),
@@ -881,7 +881,7 @@ class TestReport(TestCase):
                     provider_results=[
                         model.BenchmarkProviderResult(
                             provider='aws',
-                            value=3.0,
+                            value='3.0',
                         ),
                     ],
                 ),
@@ -895,11 +895,11 @@ class TestReport(TestCase):
                     provider_results=[
                         model.BenchmarkProviderResult(
                             provider='aws',
-                            value=2.0,
+                            value='2.0',
                         ),
                         model.BenchmarkProviderResult(
                             provider='gce',
-                            value=1.0,
+                            value='1.0',
                         ),
                     ],
                 ),
@@ -908,7 +908,7 @@ class TestReport(TestCase):
                     provider_results=[
                         model.BenchmarkProviderResult(
                             provider='aws',
-                            value=3.0,
+                            value='3.0',
                         ),
                     ],
                 ),

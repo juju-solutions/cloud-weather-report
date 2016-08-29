@@ -2,6 +2,7 @@ import os
 import shutil
 from unittest import TestCase
 from tempfile import mkdtemp
+from time import sleep
 
 import mock
 
@@ -98,6 +99,7 @@ class TestLocalDataStore(TestCase):
         ]
         for filename in filenames:
             with open('/'.join([cls.prefix, filename]), 'w') as fp:
+                sleep(0.05)
                 fp.write(filename)
         cls.ds = datastore.LocalDataStore(cls.prefix)
 
