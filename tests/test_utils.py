@@ -146,20 +146,20 @@ class TestUtil(TestCase):
         self.assertItemsEqual(units, expected)
 
     def test_connect_juju_client(self):
-        with patch('cloudweatherreport.utils.env1', autospec=True) as jc_mock:
-            jc_mock.connect.return_value = 'bar'
-            env = connect_juju_client('foo', 1)
-        jc_mock.connect.assert_called_once_with(env_name='foo')
+        with patch.object(utils, 'get_juju_major_version', return_value=2):
+            with patch('jujuclient.juju2.environment.Environment', autospec=True) as jc_mock:
+                jc_mock.connect.return_value = 'bar'
+                env = connect_juju_client('foo', 1)
+        jc_mock.connect.assert_called_once()
         self.assertEqual(env, 'bar')
 
     def test_connect_juju_client_socket_timeout(self):
-        with patch('cloudweatherreport.utils.env2', autospec=True) as jc_mock:
-            with patch.object(utils, 'get_juju_major_version', return_value=2):
+        with patch.object(utils, 'get_juju_major_version', return_value=2):
+            with patch('jujuclient.juju2.environment.Environment', autospec=True) as jc_mock:
                 jc_mock.connect.side_effect = socket.timeout
                 env = connect_juju_client('foo', 2)
         self.assertEqual(jc_mock.connect.mock_calls,
-                         [call(env_name='foo'), call(env_name='foo'),
-                          call(env_name='foo')])
+                         [call(env_name='foo'), call(env_name='foo')])
         self.assertEqual(env, None)
 
     def test_is_machine_agent_started(self):

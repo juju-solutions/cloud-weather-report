@@ -240,8 +240,7 @@ def generate_test_result(output, test='Exception', returncode=1, duration=0,
     return json.dumps(results)
 
 
-def connect_juju_client(env_name, juju_major_version=None, retries=3,
-                        logging=None):
+def connect_juju_client(env_name, retries=3, logging=None):
     """Connect to jujuclient."""
     env = None
     juju_client = get_versioned_juju_api().environment.Environment

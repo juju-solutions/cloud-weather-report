@@ -9,17 +9,6 @@ with mock.patch('deployer.utils.get_juju_major_version', return_value=1):
 from cloudweatherreport import model
 
 
-class TestEntryPoint(TestCase):
-    @mock.patch.object(run.Runner, 'run')
-    @mock.patch.object(run, 'parse_args', autospec=True)
-    def test_entry(self, mparse_args, mrun):
-        margs = mparse_args.return_value
-        margs.controllers = ['aws', 'gce']
-        run.entry_point()
-        mparse_args.assert_called_once_with()
-        self.assertEqual(mrun.call_count, 2)
-
-
 class TestRunner(TestCase):
     @mock.patch.object(model.TestPlan, 'load_plans')
     def test_run(self, mload_plans):

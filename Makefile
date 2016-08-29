@@ -2,7 +2,6 @@ all:
 	@echo "Available targets:"
 	@echo "  test"
 	@echo "  lint"
-	@echo "  cover"
 	@echo "  clean"
 apt_prereqs:
 	@for i in $(APT_PREREQS); do dpkg -l | grep -w $$i[^-] >/dev/null || sudo apt-get install -y $$i; done
