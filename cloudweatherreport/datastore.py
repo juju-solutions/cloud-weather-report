@@ -38,8 +38,8 @@ class DataStore(object):
 
     def list(self, path=None):
         """
-        List contents of a path in the data store, in modification order
-        (most recently modified last).
+        List contents of a path in the data store, sorted by modification
+        (oldest first, most recently modified last) then name.
         """
         raise NotImplementedError()
 
@@ -118,15 +118,15 @@ class LocalDataStore(DataStore):
 
     def list(self, path=None):
         """
-        List contents of a path in the data store, in modification order
-        (most recently modified last).
+        List contents of a path in the data store, sorted by modification
+        (oldest first, most recently modified last) then name.
         """
         basepath = self._path(path)
         if not os.path.exists(basepath):
             return []
 
         def mtime(fn):
-            return os.stat(self._path(path, fn)).st_mtime
+            return (os.stat(self._path(path, fn)).st_mtime, fn)
         return sorted(os.listdir(basepath), key=mtime)
 
     def exists(self, filename):
@@ -188,14 +188,14 @@ class S3DataStore(DataStore):
 
     def list(self, path=None):
         """
-        List contents of a path in the data store, in modification order
-        (most recently modified last).
+        List contents of a path in the data store, sorted by modification
+        (oldest first, most recently modified last) then name.
         """
         basepath = self._path(path)
         basepath = basepath.rstrip('/') + '/'
 
         def mtime(keyobj):
-            return keyobj.last_modified
+            return (keyobj.last_modified, keyobj.name)
         paths = self.bucket.list(basepath, '/')
         files = [k for k in paths if hasattr(k, 'last_modified')]
         return [key.name.split('/')[-1] for key in sorted(files, key=mtime)]
