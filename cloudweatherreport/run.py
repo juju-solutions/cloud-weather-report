@@ -116,7 +116,7 @@ class Runner(mp.Process):
         if not env:
             logging.error("Jujuclient could not connect to {} ".format(
                 self.controller))
-            return
+            return False
         env.name = self.controller
         env.provider_name = get_provider_name(env.info()["ProviderType"])
         logging.info('Running test on {}.'.format(env.provider_name))
@@ -154,6 +154,7 @@ class Runner(mp.Process):
             datastore.write(index.filename_html, index.as_html())
             datastore.write(report.filename_json, report.as_json())
             datastore.write(report.filename_html, report.as_html(svg_data))
+        return True
 
     def run_tests(self, test_plan, env):
         """
