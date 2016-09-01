@@ -272,7 +272,7 @@ def make_fake_results(date="2015-12-02T22:22:22", provider_name='AWS',
         "results": [
             {
                 "provider_name": provider_name,
-                "test_outcome": "All Pass",
+                "test_outcome": "PASS",
                 "benchmarks": [
                     {
                         "perf": {
@@ -285,7 +285,7 @@ def make_fake_results(date="2015-12-02T22:22:22", provider_name='AWS',
             },
             {
                 "provider_name": provider_name2,
-                "test_outcome": "Some Failed",
+                "test_outcome": "FAIL",
                 "benchmarks": [
                     {
                         "perf": {
@@ -298,7 +298,7 @@ def make_fake_results(date="2015-12-02T22:22:22", provider_name='AWS',
             },
             {
                 "provider_name": 'GCE',
-                "test_outcome": "Some Failed",
+                "test_outcome": "FAIL",
             }
         ],
         "bundle": {

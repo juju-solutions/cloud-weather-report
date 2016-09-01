@@ -1,9 +1,7 @@
 import unittest
 import argparse
 import os
-from StringIO import StringIO
 import mock
-import cloudweatherreport
 from shutil import rmtree
 from tempfile import mkdtemp
 from cloudweatherreport.datastore import DataStore
@@ -17,6 +15,16 @@ from cloudweatherreport import model
 
 
 class TestRunner(unittest.TestCase):
+    def setUp(self):
+        self._pgvja = mock.patch.object(run, 'get_versioned_juju_api')
+        self.mgvja = self._pgvja.start()
+        self.addCleanup(self._pgvja.stop)
+
+        self._pgjmv = mock.patch.object(run, 'get_juju_major_version',
+                                        return_value=2)
+        self.mgjmv = self._pgjmv.start()
+        self.addCleanup(self._pgjmv.stop)
+
     @mock.patch.object(model.TestPlan, 'load_plans')
     def test_run(self, mload_plans):
         mload_plans.return_value = [mock.Mock(), mock.Mock()]
@@ -83,12 +91,17 @@ class TestRunner(unittest.TestCase):
         tempdir = mkdtemp()
         ds = DataStore.get(tempdir)
         mock_datastore.return_value = ds
-        with mock.patch.object(run.Runner, 'run_tests', return_value=mock.Mock()) as mock_result:
-            with mock.patch.object(run.Runner, 'run_benchmarks', return_value="") as mock_benchmark:
-                with mock.patch.object(run.Runner, 'load_index', return_value=mock.Mock()) as mock_index:
-                    with mock.patch.object(run.Runner, 'load_report', return_value=mock.Mock()) as mock_load:
+        with mock.patch.object(run.Runner, 'run_tests',
+                               return_value=mock.Mock()) as mock_result:
+            with mock.patch.object(run.Runner, 'run_benchmarks',
+                                   return_value="") as mock_benchmark:
+                with mock.patch.object(run.Runner, 'load_index',
+                                       return_value=mock.Mock()) as mock_index:
+                    with mock.patch.object(run.Runner, 'load_report',
+                                           return_value=mock.Mock()
+                                           ) as mock_load:
                         runner = run.Runner('aws', mock.Mock())
-                        res = runner.run_plan(mock.Mock())
+                        runner.run_plan(mock.Mock())
         rmtree(tempdir)
         # Assert we tried to get the Juju env run the tests and benchmarks
         # and load the report and index
@@ -106,18 +119,20 @@ class TestRunner(unittest.TestCase):
         env.info.return_value = {"ProviderType": "foo"}
         mock_juju.return_value = env
         mock_provider.return_value = "foo-provider"
-        with mock.patch.object(run.Runner, 'run_tests', side_effect=Exception()) as mock_result:
-            with mock.patch.object(run.Runner, 'run_benchmarks', return_value="") as mock_benchmark:
+        with mock.patch.object(run.Runner, 'run_tests',
+                               side_effect=Exception()) as mock_result:
+            with mock.patch.object(run.Runner, 'run_benchmarks',
+                                   return_value=""):
                 runner = run.Runner('aws', mock.Mock())
                 res = runner.run_plan(mock.Mock())
-        # Assert we tried to get the Juju env run the tests but since we failed to run the tests
-        # we return false
+        # Assert we tried to get the Juju env run the tests but
+        # since we failed to run the tests we return false
         assert mock_juju.called
         assert mock_result.called
         self.assertFalse(res)
 
     @mock.patch('bundletester.tester.main')
-    @mock.patch('cloudweatherreport.model.SuiteResult.from_bundletester_output')
+    @mock.patch.object(model.SuiteResult, 'from_bundletester_output')
     def test_run_tests(self, bt_out, tester_main):
         runner = run.Runner('aws', mock.Mock())
         env = mock.Mock()
@@ -164,9 +179,6 @@ class TestRunner(unittest.TestCase):
         runner = run.Runner('aws', mock.Mock())
         benchmarks = runner.run_benchmarks(plan, env)
         self.assertEqual(len(benchmarks), 3)
-
-    def test_fetch_svg(self):
-        self.skipTest('Not implemented')
 
     def get_plan(self):
         plan = model.TestPlan.from_dict({

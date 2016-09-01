@@ -483,19 +483,19 @@ class TestSuiteResult(TestCase):
     def test_from_bundletester_output(self):
         sr = model.SuiteResult.from_bundletester_output('aws', None)
         self.assertEqual(sr.provider, 'aws')
-        self.assertEqual(sr.test_outcome, 'No Results')
+        self.assertEqual(sr.test_outcome, 'NONE')
         self.assertEqual(sr.tests, [])
 
         sr = model.SuiteResult.from_bundletester_output('aws', '...')
-        self.assertEqual(sr.test_outcome, 'No Results')
+        self.assertEqual(sr.test_outcome, 'NONE')
         self.assertEqual(sr.tests, [])
 
         sr = model.SuiteResult.from_bundletester_output('aws', '{}')
-        self.assertEqual(sr.test_outcome, 'No Results')
+        self.assertEqual(sr.test_outcome, 'NONE')
         self.assertEqual(sr.tests, [])
 
         sr = model.SuiteResult.from_bundletester_output('aws', '{"tests": []}')
-        self.assertEqual(sr.test_outcome, 'No Results')
+        self.assertEqual(sr.test_outcome, 'NONE')
         self.assertEqual(sr.tests, [])
 
         sr = model.SuiteResult.from_bundletester_output(
@@ -562,7 +562,7 @@ class TestSuiteResult(TestCase):
                     }
                 ]
             }""")
-        self.assertEqual(sr.test_outcome, 'Some Failed')
+        self.assertEqual(sr.test_outcome, 'FAIL')
         self.assertEqual(sr.tests, [
             model.TestResult(
                 suite="bundle",
@@ -580,6 +580,66 @@ class TestSuiteResult(TestCase):
             ),
         ])
         self.assertEqual(sr.provider, 'aws')
+
+        sr = model.SuiteResult.from_bundletester_output(
+            'aws',
+            """{
+                "tests": [
+                    {
+                        "suite": "bundle",
+                        "test": "charm-proof",
+                        "duration": 0.5,
+                        "output": "Traceback",
+                        "returncode": 1
+                    }
+                ]
+            }""")
+        self.assertEqual(sr.test_outcome, 'INFRA')
+
+        sr = model.SuiteResult.from_bundletester_output(
+            'aws',
+            """{
+                "tests": [
+                    {
+                        "suite": "bundle",
+                        "test": "charm-proof",
+                        "duration": 0.5,
+                        "output": "something",
+                        "returncode": 1
+                    }
+                ]
+            }""")
+        self.assertEqual(sr.test_outcome, 'FAIL')
+
+        sr = model.SuiteResult.from_bundletester_output(
+            'aws',
+            """{
+                "tests": [
+                    {
+                        "suite": "bundle",
+                        "test": "make lint",
+                        "duration": 0.5,
+                        "output": "Traceback",
+                        "returncode": 1
+                    }
+                ]
+            }""")
+        self.assertEqual(sr.test_outcome, 'INFRA')
+
+        sr = model.SuiteResult.from_bundletester_output(
+            'aws',
+            """{
+                "tests": [
+                    {
+                        "suite": "bundle",
+                        "test": "make lint",
+                        "duration": 0.5,
+                        "output": "something",
+                        "returncode": 1
+                    }
+                ]
+            }""")
+        self.assertEqual(sr.test_outcome, 'FAIL')
 
 
 class TestReport(TestCase):
@@ -1118,7 +1178,7 @@ class TestReportIndex(TestCase):
                     bundle_name='cs:bundle1',
                     date=datetime(2000, 1, 2),
                     results={'aws': 'PASS',
-                             'azure': 'Some Failed',
+                             'azure': 'FAIL',
                              'gce': 'PASS'},
                 ),
                 model.ReportIndexItem(
@@ -1126,7 +1186,7 @@ class TestReportIndex(TestCase):
                     bundle_name='cs:bundle1',
                     date=datetime(2000, 1, 1),
                     results={'aws': 'PASS',
-                             'azure': 'Provisioning Failed'},
+                             'azure': 'INFRA'},
                 ),
             ])
         html = ri.as_html()

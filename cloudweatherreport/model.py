@@ -521,26 +521,34 @@ class SuiteResult(BaseModel):
             data = {}
         any_pass = False
         any_fail = False
+        any_infra = False
         for test in data.get('tests', []):
+            lint_or_proof = test['test'] in ('charm-proof', 'make lint')
+            is_exception = 'Traceback' in test['output']
             if test['returncode'] == 0:
                 any_pass = True
+                result_code = 'PASS'
+            elif lint_or_proof and is_exception:
+                any_infra = True
+                result_code = 'INFRA'
             else:
                 any_fail = True
+                result_code = 'FAIL'
             result.tests.append(TestResult(
                 name=test['test'],
                 duration=test['duration'],
                 output=test['output'],
-                result='PASS' if test['returncode'] == 0 else 'FAIL',
+                result=result_code,
                 suite=test['suite'],
             ))
-        if not data.get('tests', []):
-            result.test_outcome = 'No Results'
-        elif any_pass and not any_fail:
-            result.test_outcome = 'PASS'
-        elif not any_pass and any_fail:
+        if any_fail:
             result.test_outcome = 'FAIL'
+        elif any_infra:
+            result.test_outcome = 'INFRA'
+        elif any_pass:
+            result.test_outcome = 'PASS'
         else:
-            result.test_outcome = 'Some Failed'
+            result.test_outcome = 'NONE'
         return result
 
 
