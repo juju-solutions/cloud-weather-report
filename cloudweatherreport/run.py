@@ -17,6 +17,7 @@ from cloudweatherreport.utils import (
     configure_logging,
     connect_juju_client,
     find_unit,
+    fetch_svg,
     get_provider_name,
     run_action,
     get_bundle_yaml,
@@ -135,7 +136,7 @@ class Runner(mp.Process):
                     name='Error Running Tests',
                     duration=0.0,
                     output=error,
-                    result='Error Running Tests',
+                    result='INFRA',
                 )])
             return False
 
@@ -143,7 +144,7 @@ class Runner(mp.Process):
             self.args.results_dir,
             self.args.bucket,
             self.args.s3_creds)
-        svg_data = self.fetch_svg(test_result.bundle_yaml)
+        svg_data = fetch_svg(test_result.bundle_yaml)
         with datastore.lock():
             index = self.load_index(datastore)
             report = self.load_report(datastore, index, test_plan)
@@ -214,9 +215,6 @@ class Runner(mp.Process):
             benchmarks.append(model.Benchmark.from_action(composite))
             logging.info('Benchmark completed.')
         return benchmarks
-
-    def fetch_svg(self, bundle_yaml):
-        pass
 
 
 def entry_point():
