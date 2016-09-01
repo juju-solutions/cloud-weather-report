@@ -1,0 +1,88 @@
+{
+  "bundle": {
+    "machines": null, 
+    "name": "git", 
+    "relations": null, 
+    "services": null
+  }, 
+  "date": "2016-07-13T00:00:00", 
+  "path": "results/result.json", 
+  "results": [
+    {
+      "benchmarks": [
+        {
+          "name": "params",
+          "test_id": "1234",
+          "date": "2016-07-13T00:00:00",
+          "direction": "desc", 
+          "units": "ops/sec", 
+          "value": "200"
+        }
+      ], 
+      "provider_name": "AWS", 
+      "test_outcome": "Some Failed", 
+      "tests": [
+        {
+          "duration": 1.55, 
+          "name": "charm-proof", 
+          "output": "foo", 
+          "result": "PASS", 
+          "suite": "git"
+        }, 
+        {
+          "duration": 2.55, 
+          "name": "00-setup", 
+          "output": "foo", 
+          "result": "PASS", 
+          "suite": "git"
+        }, 
+        {
+          "duration": 3.55, 
+          "name": "10-actions", 
+          "output": "foo", 
+          "result": "FAIL", 
+          "suite": "git"
+        }
+      ]
+    }, 
+    {
+      "benchmarks": [
+        {
+          "name": "params",
+          "test_id": "1234",
+          "date": "2016-07-13T00:00:00",
+          "direction": "desc", 
+          "units": "ops/sec", 
+          "value": "200"
+        }
+      ], 
+      "provider_name": "GCE", 
+      "test_outcome": "Some Failed", 
+      "tests": [
+        {
+          "duration": 1.55, 
+          "name": "charm-proof", 
+          "output": "foo", 
+          "result": "PASS", 
+          "suite": "git"
+        }, 
+        {
+          "duration": 2.55, 
+          "name": "00-setup", 
+          "output": "foo", 
+          "result": "PASS", 
+          "suite": "git"
+        }, 
+        {
+          "duration": 3.55, 
+          "name": "10-actions", 
+          "output": "foo", 
+          "result": "FAIL", 
+          "suite": "git"
+        }
+      ]
+    }
+  ], 
+  "test_id": "1234", 
+  "version": 2
+}
