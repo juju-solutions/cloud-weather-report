@@ -57,9 +57,9 @@ def fetch_svg(bundle_yaml):
         return None
     try:
         r = requests.post('http://svg.juju.solutions', bundle_yaml)
-    except Exception:
-        logging.warn("Timeout exception from svg.juju.solution "
-                     "for \nbundle.yaml:\n{}".format(bundle_yaml),)
+    except Exception as e:
+        logging.warn("Exception from svg.juju.solution for bundle.yaml:\n"
+                     "{}\n{}".format(bundle_yaml, e))
         return None
     if r.status_code != requests.codes.ok:
         logging.warn("Could not generate svg. Response from "
