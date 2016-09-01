@@ -343,12 +343,13 @@ class BenchmarkProviderResult(BaseModel):
     }
 
     @classmethod
-    def from_dict(cls, value):
-        if isinstance(value.get('value'), basestring):
-            # actions don't preserve type, so the value comes
+    def from_dict(cls, data):
+        if isinstance(data.get('value'), (basestring, int)):
+            # actions don't preserve type, so the value field comes
             # in as a string and needs to be coerced to a float
-            value['value'] = float(value['value'])
-        return super(BenchmarkProviderResult, cls).from_dict(value)
+            # also, just in case, coerce ints to floats as well
+            data['value'] = float(data['value'])
+        return super(BenchmarkProviderResult, cls).from_dict(data)
 
 
 class BenchmarkResult(BaseModel):
