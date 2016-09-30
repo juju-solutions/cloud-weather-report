@@ -25,7 +25,7 @@ from utils import (
     run_action,
     wait_for_action_complete,
 )
-from tests.common_test import(
+from tests.common_test import (
     setup_test_logging,
 )
 

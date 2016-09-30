@@ -156,7 +156,7 @@ class Reporter:
                 outcomes.append(
                     {'name': test["test"],
                      'result': str_result,
-                     'duration': format(test["duration"], '.2f'),
+                     'duration': format(test.get("duration", 0.0), '.2f'),
                      'output': test["output"],
                      'suite': test["suite"],
                      })

@@ -209,7 +209,8 @@ def main(args, test_plan):
                 "info": {}})
             continue
         env_info = env.info()
-        provider_name = get_provider_name(env_info["ProviderType"])
+        provider = env_info.get("ProviderType") or env_info["provider-type"]
+        provider_name = get_provider_name(provider)
         logging.info('Running test on {}.'.format(provider_name))
         test_results, status = run_bundle_test(
             args=args, env_name=env_name, test_plan=test_plan, env=env)
