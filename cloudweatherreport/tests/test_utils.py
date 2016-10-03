@@ -108,6 +108,17 @@ class TestUtil(TestCase):
         unit = find_unit("plugin", make_fake_status())
         self.assertEqual(unit, "plugin/6")
 
+    def test_find_unit_juju2(self):
+        status = make_fake_status_juju_2()
+        unit = find_unit('mysql', status)
+        self.assertEqual(unit, 'mysql/0')
+
+        unit = find_unit('wiki/0', status)
+        self.assertEqual(unit, 'wiki/0')
+
+        unit = find_unit('foo', status)
+        self.assertIsNone(unit)
+
     def test_find_unit_none(self):
         unit = find_unit("plugin/10", make_fake_status())
         self.assertIsNone(unit, None)
@@ -136,6 +147,12 @@ class TestUtil(TestCase):
                     'hdfs-master/3', 'hive/0', 'plugin/6', 'mysql/3',
                     'secondary-namenode/3']
         self.assertItemsEqual(units, expected)
+
+    def test_iter_units_juju2(self):
+        status = make_fake_status_juju_2()
+        units = list(iter_units(status))
+        units = [x for x, _ in units]
+        self.assertEqual(units, ['mysql/0', 'wiki/0'])
 
     def test_get_all_test_results(self):
         temp = mkdtemp()
@@ -196,7 +213,7 @@ class TestUtil(TestCase):
             'Networks': {},
             'Machines': {
                 '0': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
-                      'AgentState': 'started', 'AgentStateInfo': '',
+                      'AgentState': 'started', 'AgentSta/fiteInfo': '',
                       'Agent': {'Status': 'started'}}
             }
         }

@@ -22,6 +22,7 @@ from utils import (
     generate_test_result,
     get_benchmark_data,
     get_juju_major_version,
+    get_juju_client_by_version,
     generate_test_id,
     file_prefix,
     find_unit,
@@ -117,7 +118,8 @@ def run_actions(test_plan, client, env_status, bundle_name=None):
                          format(unit, action, params))
             real_unit = find_unit(unit, env_status)
             if not real_unit:
-                raise Exception("unit not found: {}".format(unit))
+                logging.error("unit not found: {}".format(unit))
+                continue
             try:
                 result = run_action(
                     client, real_unit, action, action_param=params,
@@ -161,9 +163,10 @@ def get_bundle_yaml(status):
     return None
 
 
-def run_benchmark(test_plan, bundle, output_filename, provider_name, env):
+def run_benchmark(test_plan, bundle, output_filename, provider_name, env,
+                  juju_version):
     """Run benchmarks and get the results."""
-    client = jujuclient.Actions(env)
+    client = get_juju_client_by_version(juju_version).facades.Actions(env)
     action_results = run_actions(test_plan, client, env.status())
     if action_results:
         all_values = get_benchmark_data(
@@ -220,7 +223,8 @@ def main(args, test_plan):
         benchmark_results = []
         if status is not None and test_plan.get('benchmark'):
             benchmark_results = run_benchmark(
-                test_plan, bundle, json_filename, provider_name, env)
+                test_plan, bundle, json_filename, provider_name, env,
+                args.juju_major_version)
         results.append({
             "provider_name": provider_name,
             "test_results": json.loads(test_results) if test_results else None,

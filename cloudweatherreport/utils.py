@@ -6,6 +6,8 @@ from datetime import (
 )
 import errno
 import json
+import jujuclient.juju1
+import jujuclient.juju2
 import logging
 import os
 from shutil import rmtree
@@ -120,12 +122,13 @@ def configure_logging(log_level=logging.WARNING):
 
 
 def iter_units(status):
-    services = status['Services'] or {}
-    for service_name, service in sorted(services.items()):
-        units = service.get('Units') or {}
+    applications = status.get('applications') or status.get('Services') or {}
+    for app_name, app in sorted(applications.items()):
+        units = app.get('units') or app.get('Units') or {}
         for unit_name, unit in sorted(units.items()):
             yield unit_name, unit
-            subordinates = unit.get('Subordinates') or {}
+            subordinates = (unit.get('subordinates') or
+                            unit.get('Subordinates') or {})
             for sub_name, sub in sorted(subordinates.items()):
                 yield sub_name, sub
 
@@ -241,3 +244,7 @@ def is_machine_agent_started(status, juju_major_version=2):
 
 def generate_test_id():
     return uuid.uuid4().hex
+
+
+def get_juju_client_by_version(version):
+    return jujuclient.juju1 if version == 1 else jujuclient.juju2
