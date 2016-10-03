@@ -252,30 +252,12 @@ class TestUtil(TestCase):
         self.assertEqual(started, False)
 
     def test_is_machine_agent_started_juju2(self):
-        status = {
-            'EnvironmentName': 'default-joyent',
-            'Services': {},
-            'Networks': {},
-            'Machines': {
-                '0': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
-                      'AgentStatus': {'Status': 'started'}},
-                '1': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
-                      'AgentStatus': {'Status': 'started'}},
-            }
-        }
+        status = make_fake_status_juju_2()
         started = is_machine_agent_started(status)
         self.assertEqual(started, True)
 
     def test_is_machine_agent_started_juju2_not_started(self):
-        status = {
-            'EnvironmentName': 'default-joyent',
-            'Services': {},
-            'Networks': {},
-            'Machines': {
-                '0': {'HasVote': True,  'Err': None, 'InstanceId': '1234',
-                      'AgentStatus': {'Status': 'panding'}},
-            }
-        }
+        status = make_fake_status_juju_2(agent_status='pending')
         started = is_machine_agent_started(status, juju_major_version=2)
         self.assertEqual(started, False)
 
@@ -353,6 +335,110 @@ def make_fake_results(date="2015-12-02T22:22:22", provider_name='AWS',
             "machines": None
         }
     })
+
+
+def make_fake_status_juju_2(agent_status='started'):
+    return json.loads(json.dumps(
+        {
+            "applications": {
+                "mysql": {
+                    "charm": "cs:mysql-55",
+                    "exposed": False,
+                    "series": "trusty",
+                    "units": {
+                        "mysql/0": {
+                            "agent-status": {
+                                "status": "idle",
+                            },
+                            "charm": "",
+                            "machine": "1",
+                            "opened-ports": [
+                                "3306/tcp"
+                            ],
+                            "public-address": "",
+                            "subordinates": None,
+                            "workload-status": {
+                                "status": "unknown",
+                            },
+                            "workload-version": ""
+                        }
+                    },
+                    "workload-version": ""
+                },
+                "wiki": {
+                    "can-upgrade-to": "",
+                    "charm": "cs:trusty/mediawiki-5",
+                    "exposed": False,
+                    "life": "",
+                    "series": "trusty",
+                    "status": {
+                        "status": "unknown",
+                    },
+                    "units": {
+                        "wiki/0": {
+                            "agent-status": {
+                                "status": "idle",
+                                "version": "2.0-rc2"
+                            },
+                            "machine": "2",
+                            "opened-ports": [
+                                "80/tcp"
+                            ],
+                            "public-address": "",
+                            "workload-status": {
+                                "status": "unknown",
+                            },
+                            "workload-version": ""
+                        }
+                    },
+                    "workload-version": ""
+                }
+            },
+            "machines": {
+                "1": {
+                    "agent-status": {
+                        "status": agent_status,
+                        "version": "2.0-rc2"
+                    },
+                    "containers": {},
+                    "dns-name": "127.0.0.1",
+                    "hardware": "arch=amd64 cores=1",
+                    "has-vote": False,
+                    "id": "1",
+                    "instance-id": "juju-6b8a50-1",
+                    "instance-status": {
+                        "status": "running",
+                    },
+                    "series": "trusty",
+                    "wants-vote": False
+                },
+                "2": {
+                    "agent-status": {
+                        "status": "started",
+                        "version": "2.0-rc2"
+                    },
+                    "dns-name": "127.0.0.1",
+                    "hardware": "arch=amd64 cores=1",
+                    "has-vote": False,
+                    "id": "2",
+                    "instance-id": "juju-6b8a50-2",
+                    "instance-status": {
+                        "status": "running",
+                    },
+                    "series": "trusty",
+                    "wants-vote": False
+                }
+            },
+            "model": {
+                "available-version": "",
+                "cloud-tag": "cloud-google",
+                "name": "default",
+                "region": "us-east1",
+                "version": "2.0-rc2"
+            },
+            "relations": []
+        }
+    ))
 
 
 def make_fake_status():
