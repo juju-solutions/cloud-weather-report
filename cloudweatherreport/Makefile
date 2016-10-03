@@ -4,7 +4,7 @@ test:
 lint:
 	flake8 $$(find -name '*.py')
 cover:
-	python -m coverage run --source="./" --omit "./tests/*" -m unittest discover -vv ./tests
+	python -m coverage run --source="./" --omit "./tests/*"  -m unittest discover -vv ./tests -t $(shell pwd)
 	python -m coverage report
 clean:
 	find . -name '*.pyc' -delete
