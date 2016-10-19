@@ -544,7 +544,7 @@ class SuiteResult(BaseModel):
                 result_code = 'FAIL'
             result.tests.append(TestResult(
                 name=test['test'],
-                duration=test['duration'],
+                duration=test.get('duration', 0.0),
                 output=test['output'],
                 result=result_code,
                 suite=test['suite'],

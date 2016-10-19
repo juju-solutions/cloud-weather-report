@@ -119,7 +119,9 @@ class Runner(mp.Process):
                 self.controller))
             return False
         env.name = self.controller
-        env.provider_name = get_provider_name(env.info()["ProviderType"])
+        provider = (env.info().get("provider-type") or
+                    env.info().get("ProviderType"))
+        env.provider_name = get_provider_name(provider)
         logging.info('Running test on {}.'.format(env.provider_name))
         try:
             test_result = self.run_tests(test_plan, env)
@@ -195,8 +197,8 @@ class Runner(mp.Process):
                 benchmark_plan.params))
             real_unit = find_unit(benchmark_plan.unit, env_status)
             if not real_unit:
-                raise Exception("unit not found: {}".format(
-                    benchmark_plan.unit))
+                logging.error("unit not found: {}".format(benchmark_plan.unit))
+                continue
             try:
                 result = run_action(
                     actions_client,
