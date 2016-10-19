@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Result of recent tests
+{% endblock %}
+
+{% from "macros.html" import display_status_img with context %}
+
+{% block bundle_title %}
+    <h2> {{ bundle_title }} </h2>
+{% endblock %}
+
+
+{% block content %}
+
+    <div class="twelve-col">
+
+        <table>
+            <thead>
+            <tr>
+                <th></th>
+                <th scope="col">Bundle</th>
+                <th scope="col">Number of tests</th>
+            </tr>
+            </thead>
+
+            {% for bundle_name in bundles.keys|sorted %}
+                <tr>
+                    <td></td>
+                    <td class="bundle-status">
+                        {{ bundle_name }}
+                    </td>
+
+                    <td>
+                        <a href="{{ bundles[bundle_name]['index_filename'] }}">
+                            {{ bundles[bundle_name]['count'] }}
+                        </a>
+                    </td>
+
+                </tr>
+            {% endfor %}
+        </table>
+
+    </div>
+
+{% endblock %}

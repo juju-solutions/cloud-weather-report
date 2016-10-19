@@ -155,6 +155,11 @@ class Runner(mp.Process):
             datastore.write(index.filename_html, index.as_html())
             datastore.write(report.filename_json, report.as_json())
             datastore.write(report.filename_html, report.as_html(svg_data))
+            datastore.write(index.bundles_html, index.bundle_index_html())
+            for bundle_name in index.bundle_names():
+                datastore.write(
+                    index.bundle_index_filename(bundle_name),
+                    index.as_html(bundle_name))
         return True
 
     def run_tests(self, test_plan, env):

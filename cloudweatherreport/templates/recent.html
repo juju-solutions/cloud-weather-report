@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Result of recent tests
+{% endblock %}
+
+{% from "macros.html" import display_status_img with context %}
+
+{% block bundle_title %}
+    <h2> {{ bundle_title }} </h2>
+{% endblock %}
+
+
+{% block content %}
+
+    <div class="twelve-col">
+
+        <table>
+            <thead>
+            <tr>
+                <th></th>
+                <th scope="col">Bundle</th>
+                <th scope="col">Date</th>
+                <th scope="col">Test Results</th>
+            </tr>
+            </thead>
+
+            {% for grouped_tests in cwr_results %}
+                <tr>
+                    <td></td>
+                    <td class="bundle-status">
+                        {{ grouped_tests[0]['bundle_name'] }}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('result_by_test_id', key=grouped_tests[0]['test_id']) }}">
+                            {{ grouped_tests[0]['test']['date'] | humanize_date }}
+                        </a>
+                    </td>
+
+                    <td class="bundle-status">
+
+                        {% for tests in grouped_tests %}
+
+                            {% for outcome in tests['test']['results'] %}
+
+                                <table class="outcome" onclick="window.location='{{ url_for('result_by_test_id', key=grouped_tests[0]['test_id']) }}'">
+                                    <tr>
+                                        <td>
+                                            {{ outcome.get("provider_name") }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>{{ display_status_img(outcome.get("test_outcome")) }}</td>
+                                    </tr>
+                                </table>
+
+                            {% endfor %}
+
+                        {% endfor %}
+
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+
+        {{ display_pagination(pagination) }}
+    </div>
+
+{% endblock %}

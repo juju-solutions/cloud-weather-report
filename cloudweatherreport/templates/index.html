@@ -24,7 +24,7 @@
             </tr>
             </thead>
 
-            {% for report in report_index.reports %}
+            {% for report in reports %}
                 <tr class="result">
                     <td class="bundle-name" scope="col">
                         <a href="{{ report.filename_html }}">{{ report.bundle_name }}</a>
@@ -34,7 +34,7 @@
                     </td>
                     <td class="bundle-status">
                         <a href="{{ report.filename_html }}">
-                        {% for provider in report_index.providers %}
+                        {% for provider in providers %}
                             <table class="outcome">
                                 <tr><td>{{ provider }}</td></tr>
                                 <tr>

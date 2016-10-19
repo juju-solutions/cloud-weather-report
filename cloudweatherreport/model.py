@@ -4,11 +4,19 @@ import yaml
 import logging
 from datetime import datetime
 from base64 import b64encode
+from collections import Counter
 
 from pkg_resources import resource_filename
 import jinja2
 
 from cloudweatherreport import utils
+
+
+try:
+    basestring
+except NameError:
+    # basestring doesn't exist in Python 3
+    basestring = str
 
 
 log = logging.getLogger(__name__)
@@ -692,8 +700,8 @@ class ReportIndexItem(BaseModel):
 
     def __eq__(self, other):
         if isinstance(other, Report):
-            return (self.bundle_name == other.bundle.name
-                    and self.test_id == other.test_id)
+            return (self.bundle_name == other.bundle.name and
+                    self.test_id == other.test_id)
         return super(ReportIndexItem, self).__eq__(other)
 
     def update_from_report(self, report):
@@ -725,6 +733,7 @@ class ReportIndex(BaseModel):
     }
     filename_json = 'index.json'
     filename_html = 'index.html'
+    bundles_html = 'bundles.html'
 
     def upsert_report(self, report):
         """
@@ -751,14 +760,51 @@ class ReportIndex(BaseModel):
                 return index_item
         return None
 
-    def as_html(self):
+    def bundle_names(self):
+        """
+        Return a list of the names of bundles which have reports.
+        """
+        return set(report.bundle_name for report in self.reports)
+
+    def as_html(self, bundle_name=None):
         """
         Serialize this index to an HTML page.
+
+        Optionally, only serialize reports for a given bundle.
         """
         templates = resource_filename(__name__, 'templates')
         env = jinja2.Environment(loader=jinja2.FileSystemLoader(templates))
         env.filters['humanize_date'] = utils.humanize_date
 
+        reports = self.reports
+        if bundle_name:
+            reports = filter(lambda r: r.bundle_name == bundle_name, reports)
+
         template = env.get_template('index.html')
-        html = template.render(report_index=self)
+        html = template.render(
+            reports=self.reports,
+            providers=self.providers,
+        )
         return html
+
+    def bundle_index_html(self):
+        """
+        Serialize this index to an HTML summary of all the bundles
+        contained in the report.
+        """
+        templates = resource_filename(__name__, 'templates')
+        env = jinja2.Environment(loader=jinja2.FileSystemLoader(templates))
+        template = env.get_template('bundles.html')
+
+        bundles = Counter(report.bundle_name for report in self.reports)
+        bundles = {
+            bundle_name: {
+                'count': count,
+                'index_filename': self.bundle_index_filename(bundle_name),
+            } for bundle_name, count in bundles.items()
+        }
+        html = template.render(bundles=bundles)
+        return html
+
+    def bundle_index_filename(self, bundle_name):
+        return '/'.join([bundle_name, 'index.html'])
