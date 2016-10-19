@@ -29,9 +29,9 @@ class TestDataStore(TestCase):
 
         # test no contest
         ds_alf.return_value = '.lock.uuid'
-        with ds.lock('path'):
+        with ds.lock():
             ds_write.assert_called_once_with('.lock.uuid', '')
-            ds_alf.assert_called_once_with('path')
+            ds_alf.assert_called_once_with()
             assert not ds_sleep.called
             assert not ds_delete.called
         ds_delete.assert_called_once_with('.lock.uuid')

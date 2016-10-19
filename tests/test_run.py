@@ -11,7 +11,7 @@ with mock.patch('deployer.utils.get_juju_major_version', return_value=1):
     # deployer (from bundletester) tries to call out to Juju CLI
     # on import to determine which major version of Juju it's using
     from cloudweatherreport import run
-from cloudweatherreport import model
+    from cloudweatherreport import model
 
 
 class TestRunner(unittest.TestCase):
@@ -100,6 +100,10 @@ class TestRunner(unittest.TestCase):
                     with mock.patch.object(run.Runner, 'load_report',
                                            return_value=mock.Mock()
                                            ) as mock_load:
+                        mock_index.return_value.bundle_names.\
+                            return_value = ['bundle']
+                        mock_index.return_value.bundle_index_filename.\
+                            return_value = 'bundle/index.html'
                         runner = run.Runner('aws', mock.Mock())
                         runner.run_plan(mock.Mock())
         rmtree(tempdir)
