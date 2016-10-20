@@ -281,6 +281,7 @@ class TestPlan(BaseModel):
         'bundle_file': basestring,
         'bundle_name': basestring,
         'tests': list([basestring]),
+        'url': basestring,
     }
 
     @classmethod
@@ -331,7 +332,7 @@ class TestPlan(BaseModel):
     def report_filename(self, test_id):
         return Report(
             test_id=test_id,
-            bundle=BundleInfo(name=self.bundle),
+            bundle=BundleInfo(name=self.bundle, url=self.url),
         ).filename_json
 
 
@@ -341,6 +342,7 @@ class BundleInfo(BaseModel):
         'name': basestring,
         'relations': None,
         'services': None,
+        'url': basestring,
     }
 
 
@@ -684,6 +686,7 @@ class ReportIndexItem(BaseModel):
         'bundle_name': basestring,
         'date': datetime,
         'results': dict,  # e.g., {'aws': 'PASS'}
+        'url': basestring,
     }
 
     @classmethod

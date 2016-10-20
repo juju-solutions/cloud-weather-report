@@ -67,7 +67,7 @@
 
 {% block bundle_title %}
     <div>
-        <h2 class="align-center"> {{ report.bundle.name }} </h2>
+        <h2 class="align-center"><a href="{{ report.bundle.url if report.bundle.url else '#' }}">{{ report.bundle.name }}</a></h2>
         <span>
             Date: {{ report.date | replace('T', ' ')}}
         </span>

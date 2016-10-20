@@ -52,7 +52,7 @@ class TestRunner(unittest.TestCase):
     @mock.patch.object(model.Report, 'upsert_benchmarks')
     def test_load_report(self, mupsert_benchmarks):
         runner = run.Runner('aws', mock.Mock(test_id='test'))
-        test_plan = mock.Mock(bundle='bundle')
+        test_plan = mock.Mock(bundle='bundle', url='example.com')
         test_plan.report_filename.return_value = 'filename'
         datastore = mock.Mock()
         datastore.read.return_value = '{"test_id": "foo"}'
@@ -162,7 +162,7 @@ class TestRunner(unittest.TestCase):
         runner.run_benchmarks(plan, env)
         assert mock_log_error.called
 
-    @mock.patch('cloudweatherreport.run.find_unit')
+    @mock.patch('cloudweatherreport.run.find_unit', side_effect=Exception)
     def test_run_benchmarks_unit_not_found(self, mock_unit):
         mock_unit.return_value = None
         env = mock.Mock()
