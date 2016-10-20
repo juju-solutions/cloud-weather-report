@@ -102,7 +102,8 @@ class Runner(mp.Process):
                 version=2,
                 test_id=self.test_id,
                 date=datetime.now(),
-                bundle=model.BundleInfo(name=test_plan.bundle),
+                bundle=model.BundleInfo(
+                    name=test_plan.bundle, url=test_plan.url),
             )
             prev_report = index.find_previous_report(report)
             if prev_report:
