@@ -810,4 +810,6 @@ class ReportIndex(BaseModel):
         return html
 
     def bundle_index_filename(self, bundle_name):
-        return '/'.join([bundle_name, 'index.html'])
+        return '/'.join([
+            re.sub(r'[^a-zA-Z0-9]', '_', bundle_name),
+            'index.html'])
