@@ -785,7 +785,7 @@ class ReportIndex(BaseModel):
 
         template = env.get_template('index.html')
         html = template.render(
-            reports=self.reports,
+            reports=reports,
             providers=self.providers,
         )
         return html
