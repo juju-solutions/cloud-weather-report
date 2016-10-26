@@ -575,7 +575,6 @@ class Report(BaseModel):
         'results': list([SuiteResult]),
         'bundle': BundleInfo,
         'benchmarks': list([Benchmark]),
-        'base_url': basestring,
     }
 
     @property
@@ -618,7 +617,7 @@ class Report(BaseModel):
 
         template = env.get_template('bundle.html')
         html = template.render(report=self, svg_data=svg_data,
-                               base_url=self.base_url)
+                               base_url='../../')
         return html
 
     def _filename(self):
@@ -739,7 +738,6 @@ class ReportIndex(BaseModel):
     fields = {
         'providers': list([basestring]),
         'reports': list([ReportIndexItem]),
-        'base_url': basestring,
     }
     full_index_filename_json = 'full_index.json'
     full_index_filename_html = 'full_index.html'
@@ -791,7 +789,6 @@ class ReportIndex(BaseModel):
         temp_index = ReportIndex(
             providers=self.providers,
             reports=reports,
-            base_url=self.base_url,
         )
         return super(ReportIndex, temp_index).as_json()
 
@@ -815,7 +812,7 @@ class ReportIndex(BaseModel):
             bundle_name=bundle_name,
             reports=reports,
             providers=self.providers,
-            base_url=self.base_url,
+            base_url='../' if bundle_name else '',
         )
         return html
 
@@ -861,7 +858,6 @@ class ReportIndex(BaseModel):
         html = template.render(
             bundles=self._summary_data(),
             providers=self.providers,
-            base_url=self.base_url,
         )
         return html
 

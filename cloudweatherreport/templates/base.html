@@ -3,15 +3,16 @@
 <head>
         <meta charset="UTF-8">
         <title>{% block title %}{% endblock %}</title>
-        <!--link rel="stylesheet" type="text/css" media="screen" href="static/css/ubuntu-styles.css" -->
-        <link rel="stylesheet" type="text/css" media="screen" href="https://assets.ubuntu.com/v1/vanilla-framework-version-0.0.65.min.css">
-        <!-- link rel="stylesheet" type="text/css" media="all"
-              href="http://assets.ubuntu.com/sites/guidelines/css/latest/ubuntu-styles.css"/ -->
-        <link rel="stylesheet" type="text/css" href="http://data.vapour.ws/assets/cwr/css/base.css" >
 
         {% if base_url %}
             <base href="{{ base_url }}">
         {% endif %}
+
+        <!--link rel="stylesheet" type="text/css" media="screen" href="static/css/ubuntu-styles.css" -->
+        <link rel="stylesheet" type="text/css" media="screen" href="css/vanilla.min.css">
+        <!-- link rel="stylesheet" type="text/css" media="all"
+              href="http://assets.ubuntu.com/sites/guidelines/css/latest/ubuntu-styles.css"/ -->
+        <link rel="stylesheet" type="text/css" href="css/base.css" >
 
     {% block head %}
     {% endblock %}

@@ -118,8 +118,12 @@
     text-align: center;
 }
 
-#main-content table thead th:first-of-type {
+table thead th.name {
     text-align: center;
+}
+
+table thead th.results {
+    white-space: nowrap;
 }
 
 .results-legend {
