@@ -17,7 +17,7 @@ class DataStore(object):
     """
 
     @classmethod
-    def get(cls, prefix, s3_bucket=None, s3_creds_file=None):
+    def get(cls, prefix, s3_bucket=None, s3_creds_file=None, public=True):
         """
         Get a LocalDataStore or S3DataStore instance depending on whether
         S3 is provided.
@@ -25,7 +25,8 @@ class DataStore(object):
         if s3_bucket:
             return S3DataStore(prefix,
                                s3_bucket,
-                               s3_creds_file)
+                               s3_creds_file,
+                               public)
         else:
             return LocalDataStore(prefix)
 
@@ -166,7 +167,7 @@ class S3DataStore(DataStore):
     Data store implementation using Amazon's S3.
     """
 
-    def __init__(self, prefix, bucket_name, creds_file):
+    def __init__(self, prefix, bucket_name, creds_file, public):
         super(S3DataStore, self).__init__(prefix)
         config = ConfigParser()
         with open(creds_file) as fp:
@@ -175,6 +176,7 @@ class S3DataStore(DataStore):
         self.secret_key = config.get('default', 'secret_key')
         self.bucket_name = bucket_name
         self._bucket = None
+        self.public = public
 
     @property
     def bucket(self):
@@ -226,6 +228,8 @@ class S3DataStore(DataStore):
             'Content-Type': content_type or 'text/plain',
             'Content-Encoding': encoding,
         })
+        if self.public:
+            key.set_canned_acl('public-read')
 
     def delete(self, filename):
         """
