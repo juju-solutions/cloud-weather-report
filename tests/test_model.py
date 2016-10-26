@@ -1198,7 +1198,7 @@ class TestReportIndex(TestCase):
             'FAIL': u'\u2718',
             'Some': u'\u2718',
             'Prov': u'\u25B2',
-            'None': u'\u26ab',
+            'None': u'\u25ef',
         }
         expected = [
             (
