@@ -38,6 +38,8 @@ def parse_args(argv=None):
                              'instead of locally')
     parser.add_argument('--s3-creds',
                         help='Path to config file containing S3 credentials')
+    parser.add_argument('--base-url',
+                        help='Base URL to use for all relative URLs')
 
     # bundle tester args
     parser.add_argument('-t', '--testdir', default=os.getcwd())
@@ -91,7 +93,7 @@ class Runner(mp.Process):
             index_json = datastore.read(index_filename)
             return model.ReportIndex.from_json(index_json)
         else:
-            return model.ReportIndex()
+            return model.ReportIndex(base_url=self.args.base_url)
 
     def load_report(self, datastore, index, test_plan):
         filename = test_plan.report_filename(self.test_id)
@@ -104,6 +106,7 @@ class Runner(mp.Process):
                 date=datetime.now(),
                 bundle=model.BundleInfo(
                     name=test_plan.bundle, url=test_plan.url),
+                base_url=self.args.base_url
             )
             prev_report = index.find_previous_report(report)
             if prev_report:

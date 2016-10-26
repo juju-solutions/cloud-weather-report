@@ -9,6 +9,10 @@
               href="http://assets.ubuntu.com/sites/guidelines/css/latest/ubuntu-styles.css"/ -->
         <link rel="stylesheet" type="text/css" href="http://data.vapour.ws/assets/cwr/css/base.css" >
 
+        {% if base_url %}
+            <base href="{{ base_url }}">
+        {% endif %}
+
     {% block head %}
     {% endblock %}
 
@@ -33,7 +37,7 @@
 <header class="banner global" role="banner">
     <nav role="navigation" class="nav-primary nav-right" id="nav">
         <div class="logo">
-            <a href="/"><span>Cloud Weather Report</span></a>
+            <a href="index.html"><span>Cloud Weather Report</span></a>
         </div>
         <ul>
             <li>

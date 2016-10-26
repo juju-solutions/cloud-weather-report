@@ -571,6 +571,7 @@ class Report(BaseModel):
         'results': list([SuiteResult]),
         'bundle': BundleInfo,
         'benchmarks': list([Benchmark]),
+        'base_url': basestring,
     }
 
     @property
@@ -612,7 +613,8 @@ class Report(BaseModel):
         env.filters['base64'] = b64encode
 
         template = env.get_template('bundle.html')
-        html = template.render(report=self, svg_data=svg_data)
+        html = template.render(report=self, svg_data=svg_data,
+                               base_url=self.base_url)
         return html
 
     def _filename(self):
@@ -733,6 +735,7 @@ class ReportIndex(BaseModel):
     fields = {
         'providers': list([basestring]),
         'reports': list([ReportIndexItem]),
+        'base_url': basestring,
     }
     filename_json = 'index.json'
     filename_html = 'index.html'
@@ -778,7 +781,6 @@ class ReportIndex(BaseModel):
         templates = resource_filename(__name__, 'templates')
         env = jinja2.Environment(loader=jinja2.FileSystemLoader(templates))
         env.filters['humanize_date'] = utils.humanize_date
-
         reports = self.reports
         if bundle_name:
             reports = filter(lambda r: r.bundle_name == bundle_name, reports)
@@ -787,6 +789,7 @@ class ReportIndex(BaseModel):
         html = template.render(
             reports=reports,
             providers=self.providers,
+            base_url=self.base_url,
         )
         return html
 
@@ -806,7 +809,7 @@ class ReportIndex(BaseModel):
                 'index_filename': self.bundle_index_filename(bundle_name),
             } for bundle_name, count in bundles.items()
         }
-        html = template.render(bundles=bundles)
+        html = template.render(bundles=bundles, base_url=self.base_url)
         return html
 
     def bundle_index_filename(self, bundle_name):
