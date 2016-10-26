@@ -8,6 +8,7 @@ import logging
 import os
 import traceback
 from copy import copy
+from pkg_resources import resource_string
 
 from bundletester import tester
 
@@ -38,8 +39,6 @@ def parse_args(argv=None):
                              'instead of locally')
     parser.add_argument('--s3-creds',
                         help='Path to config file containing S3 credentials')
-    parser.add_argument('--base-url',
-                        help='Base URL to use for all relative URLs')
     parser.add_argument('--results-per-bundle', default=40, type=int,
                         help='Maximum number of results to list per bundle in '
                              'the index.  Older results will not be listed, '
@@ -98,7 +97,7 @@ class Runner(mp.Process):
             index_json = datastore.read(index_filename)
             return model.ReportIndex.from_json(index_json)
         else:
-            return model.ReportIndex(base_url=self.args.base_url)
+            return model.ReportIndex()
 
     def load_report(self, datastore, index, test_plan):
         filename = test_plan.report_filename(self.test_id)
@@ -111,7 +110,6 @@ class Runner(mp.Process):
                 date=datetime.now(),
                 bundle=model.BundleInfo(
                     name=test_plan.bundle, url=test_plan.url),
-                base_url=self.args.base_url
             )
             prev_report = index.find_previous_report(report)
             if prev_report:
@@ -162,6 +160,14 @@ class Runner(mp.Process):
             report.upsert_result(test_result)
             report.upsert_benchmarks(benchmark_results)
             index.upsert_report(report)
+            datastore.write(
+                'css/base.css',
+                resource_string(__name__,
+                                'static/css/base.css').decode('utf8'))
+            datastore.write(
+                'css/vanilla.min.css',
+                resource_string(__name__,
+                                'static/css/vanilla.min.css').decode('utf8'))
             datastore.write(index.full_index_filename_json, index.as_json())
             datastore.write(index.full_index_filename_html, index.as_html())
             datastore.write(report.filename_json, report.as_json())
