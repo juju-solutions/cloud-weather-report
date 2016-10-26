@@ -40,6 +40,11 @@ def parse_args(argv=None):
                         help='Path to config file containing S3 credentials')
     parser.add_argument('--base-url',
                         help='Base URL to use for all relative URLs')
+    parser.add_argument('--results-per-bundle', default=40, type=int,
+                        help='Maximum number of results to list per bundle in '
+                             'the index.  Older results will not be listed, '
+                             'but the result reports themselves will be '
+                             'preserved.')
 
     # bundle tester args
     parser.add_argument('-t', '--testdir', default=os.getcwd())
@@ -88,7 +93,7 @@ class Runner(mp.Process):
             self.run_plan(test_plan)
 
     def load_index(self, datastore):
-        index_filename = model.ReportIndex.filename_json
+        index_filename = model.ReportIndex.full_index_filename_json
         if datastore.exists(index_filename):
             index_json = datastore.read(index_filename)
             return model.ReportIndex.from_json(index_json)
@@ -157,15 +162,21 @@ class Runner(mp.Process):
             report.upsert_result(test_result)
             report.upsert_benchmarks(benchmark_results)
             index.upsert_report(report)
-            datastore.write(index.filename_json, index.as_json())
-            datastore.write(index.filename_html, index.as_html())
+            datastore.write(index.full_index_filename_json, index.as_json())
+            datastore.write(index.full_index_filename_html, index.as_html())
             datastore.write(report.filename_json, report.as_json())
             datastore.write(report.filename_html, report.as_html(svg_data))
-            datastore.write(index.bundles_html, index.bundle_index_html())
+            datastore.write(index.summary_filename_html, index.summary_html())
+            datastore.write(index.summary_filename_json, index.summary_json())
             for bundle_name in index.bundle_names():
                 datastore.write(
-                    index.bundle_index_filename(bundle_name),
-                    index.as_html(bundle_name))
+                    index.bundle_index_html(bundle_name),
+                    index.as_html(bundle_name,
+                                  limit=self.args.results_per_bundle))
+                datastore.write(
+                    index.bundle_index_json(bundle_name),
+                    index.as_json(bundle_name,
+                                  limit=self.args.results_per_bundle))
         return True
 
     def run_tests(self, test_plan, env):

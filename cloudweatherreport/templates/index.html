@@ -7,7 +7,7 @@
 {% from "macros.html" import display_status_img with context %}
 
 {% block bundle_title %}
-    <h2> Recent Results </h2>
+    <h2>Recent Results{% if bundle_name %} for {{ bundle_name }}{% endif %}</h2>
 {% endblock %}
 
 
@@ -47,11 +47,11 @@
                 </tr>
             {% endfor %}
        </table>
-       <div>
-           <span style="padding-left: 10px">{{  display_status_img('PASS') }}Test Passed.</span>
-           <span style="padding-left: 10px">{{  display_status_img('FAIL') }}Test Failed.</span>
-           <span style="padding-left: 10px">{{  display_status_img('INFRA') }}Infrastructure Failure.</span>
-           <span style="padding-left: 10px">{{  display_status_img('none') }}No Test.</span>
+       <div class="results-legend">
+           <span style="padding-left: 10px">{{  display_status_img('PASS') }}Test Passed</span>
+           <span style="padding-left: 10px">{{  display_status_img('FAIL') }}Test Failed</span>
+           <span style="padding-left: 10px">{{  display_status_img('INFRA') }}Infrastructure Failure</span>
+           <span style="padding-left: 10px">{{  display_status_img('NONE') }}No Test Result</span>
        </div>
     </div>
 

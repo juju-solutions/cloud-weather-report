@@ -4,7 +4,6 @@ import yaml
 import logging
 from datetime import datetime
 from base64 import b64encode
-from collections import Counter
 
 from pkg_resources import resource_filename
 import jinja2
@@ -742,9 +741,10 @@ class ReportIndex(BaseModel):
         'reports': list([ReportIndexItem]),
         'base_url': basestring,
     }
-    filename_json = 'index.json'
-    filename_html = 'index.html'
-    bundles_html = 'bundles.html'
+    full_index_filename_json = 'full_index.json'
+    full_index_filename_html = 'full_index.html'
+    summary_filename_html = 'index.html'
+    summary_filename_json = 'index.json'
 
     def upsert_report(self, report):
         """
@@ -777,7 +777,25 @@ class ReportIndex(BaseModel):
         """
         return set(report.bundle_name for report in self.reports)
 
-    def as_html(self, bundle_name=None):
+    def as_json(self, bundle_name=None, limit=None):
+        """
+        Serialize this index to JSON.
+
+        Optionally, only serialize reports for a given bundle.
+        """
+        reports = self.reports
+        if bundle_name:
+            reports = filter(lambda r: r.bundle_name == bundle_name, reports)
+        if limit:
+            reports = reports[:limit]
+        temp_index = ReportIndex(
+            providers=self.providers,
+            reports=reports,
+            base_url=self.base_url,
+        )
+        return super(ReportIndex, temp_index).as_json()
+
+    def as_html(self, bundle_name=None, limit=None):
         """
         Serialize this index to an HTML page.
 
@@ -789,35 +807,71 @@ class ReportIndex(BaseModel):
         reports = self.reports
         if bundle_name:
             reports = filter(lambda r: r.bundle_name == bundle_name, reports)
+        if limit:
+            reports = reports[:limit]
 
         template = env.get_template('index.html')
         html = template.render(
+            bundle_name=bundle_name,
             reports=reports,
             providers=self.providers,
             base_url=self.base_url,
         )
         return html
 
-    def bundle_index_html(self):
+    def _summary_data(self):
+        bundles = {}
+        for report in self.reports:
+            bundle_name = report.bundle_name
+            if bundle_name not in bundles:
+                # save (only) the first (most recent) report per bundle
+                bundles[bundle_name] = {
+                    'count': 0,
+                    'report': report,
+                    'index_filename': self.bundle_index_html(bundle_name),
+                }
+            bundles[bundle_name]['count'] += 1
+        return bundles
+
+    def summary_json(self):
+        """
+        Serialize this index to a JSON summary of all the bundles
+        contained in the report.
+        """
+        return json.dumps(
+            [{
+                'bundle_name': name,
+                'latest_result': result['report'].as_dict(),
+            } for name, result in sorted(self._summary_data().items())],
+            sort_keys=True,
+            encoding='utf8',
+            indent=2,
+            default=utils.serializer)
+
+    def summary_html(self):
         """
         Serialize this index to an HTML summary of all the bundles
         contained in the report.
         """
         templates = resource_filename(__name__, 'templates')
         env = jinja2.Environment(loader=jinja2.FileSystemLoader(templates))
+        env.filters['humanize_date'] = utils.humanize_date
         template = env.get_template('bundles.html')
 
-        bundles = Counter(report.bundle_name for report in self.reports)
-        bundles = {
-            bundle_name: {
-                'count': count,
-                'index_filename': self.bundle_index_filename(bundle_name),
-            } for bundle_name, count in bundles.items()
-        }
-        html = template.render(bundles=bundles, base_url=self.base_url)
+        html = template.render(
+            bundles=self._summary_data(),
+            providers=self.providers,
+            base_url=self.base_url,
+        )
         return html
 
-    def bundle_index_filename(self, bundle_name):
+    def _bundle_index_filename(self, bundle_name, ext):
         return '/'.join([
             re.sub(r'[^a-zA-Z0-9]', '_', bundle_name),
-            'index.html'])
+            'index.%s' % ext])
+
+    def bundle_index_html(self, bundle_name):
+        return self._bundle_index_filename(bundle_name, 'html')
+
+    def bundle_index_json(self, bundle_name):
+        return self._bundle_index_filename(bundle_name, 'json')

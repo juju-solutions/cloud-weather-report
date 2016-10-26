@@ -18,20 +18,6 @@
 
 </head>
 
-
-{% macro display_pagination(pagination) -%}
-    {% if pagination.has_prv %}
-        <div class="button--secondary">
-            <a href="{{ pagination.prv_page }}">&#171; Prv</a>
-        </div>
-    {% endif %}
-    {% if pagination.has_next %}
-        <div class="button--secondary">
-            <a href="{{ pagination.next_page }}">Next &#187;</a>
-        </div>
-    {% endif %}
-{%- endmacro %}
-
 <body class="homepage">
 
 <header class="banner global" role="banner">
@@ -39,11 +25,6 @@
         <div class="logo">
             <a href="index.html"><span>Cloud Weather Report</span></a>
         </div>
-        <ul>
-            <li>
-                <a href="bundles.html">Bundles</a>
-            </li>
-        </ul>
     </nav>
 </header>
 

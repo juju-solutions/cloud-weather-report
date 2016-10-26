@@ -18,28 +18,45 @@
         <table>
             <thead>
             <tr>
-                <th></th>
                 <th scope="col">Bundle</th>
-                <th scope="col">Number of tests</th>
+                <th scope="col">Date</th>
+                <th scope="col">Latest Test Results</th>
             </tr>
             </thead>
 
             {% for bundle_name in bundles.keys()|sort %}
+                {% set report = bundles[bundle_name]['report'] %}
                 <tr>
-                    <td></td>
-                    <td class="bundle-status">
-                        {{ bundle_name }}
-                    </td>
-
-                    <td>
-                        <a href="{{ bundles[bundle_name]['index_filename'] }}">
-                            {{ bundles[bundle_name]['count'] }}
+                    <td class="bundle-name">
+                        <a href="{{ bundles[bundle_name]['index_filename'] }}"
+                           title="{{ bundles[bundle_name]['count'] }} test results">
+                            {{ bundle_name }}
                         </a>
                     </td>
-
+                    <td class="bundle-date">
+                        <a href="{{ report.filename_html }}">{{ report.date|humanize_date }}</a>
+                    </td>
+                    <td class="bundle-status">
+                        <a href="{{ report.filename_html }}">
+                        {% for provider in providers %}
+                            <table class="outcome">
+                                <tr><td>{{ provider }}</td></tr>
+                                <tr>
+                                    <td>{{ display_status_img(report.results[provider]) }}</td>
+                                </tr>
+                            </table>
+                        {% endfor %}
+                        </a>
+                    </td>
                 </tr>
             {% endfor %}
         </table>
+       <div class="results-legend">
+           <span style="padding-left: 10px">{{  display_status_img('PASS') }}Test Passed</span>
+           <span style="padding-left: 10px">{{  display_status_img('FAIL') }}Test Failed</span>
+           <span style="padding-left: 10px">{{  display_status_img('INFRA') }}Infrastructure Failure</span>
+           <span style="padding-left: 10px">{{  display_status_img('NONE') }}No Test Result</span>
+       </div>
 
     </div>
 

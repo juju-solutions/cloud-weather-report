@@ -117,3 +117,11 @@
     padding: 10px;
     text-align: center;
 }
+
+#main-content table thead th:first-of-type {
+    text-align: center;
+}
+
+.results-legend {
+    text-align: center;
+}
