@@ -46,7 +46,14 @@
                     </td>
                 </tr>
             {% endfor %}
-        </table>
+       </table>
+       <div>
+           <span style="padding-left: 10px">{{  display_status_img('PASS') }}Test Passed.</span>
+           <span style="padding-left: 10px">{{  display_status_img('FAIL') }}Test Failed.</span>
+           <span style="padding-left: 10px">{{  display_status_img('INFRA') }}Infrastructure Failure.</span>
+           <span style="padding-left: 10px">{{  display_status_img('none') }}No Test.</span>
+       </div>
     </div>
+
 
 {% endblock %}
