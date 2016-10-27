@@ -39,6 +39,9 @@ def parse_args(argv=None):
                              'instead of locally')
     parser.add_argument('--s3-creds',
                         help='Path to config file containing S3 credentials')
+    parser.add_argument('--s3-private', dest='s3_public',
+                        action='store_false', default=True,
+                        help='Do not make the files written to S3 public-read')
     parser.add_argument('--results-per-bundle', default=40, type=int,
                         help='Maximum number of results to list per bundle in '
                              'the index.  Older results will not be listed, '
@@ -152,7 +155,8 @@ class Runner(mp.Process):
         datastore = DataStore.get(
             self.args.results_dir,
             self.args.bucket,
-            self.args.s3_creds)
+            self.args.s3_creds,
+            self.args.s3_public)
         svg_data = fetch_svg(test_result.bundle_yaml)
         with datastore.lock():
             index = self.load_index(datastore)
