@@ -1,6 +1,10 @@
 PyYAML>=3.11
 bundletester
-jujuclient>=0.53.0
+jujuclient>=0.53.0,<1.0.0
 Jinja2
 MarkupSafe
 mock
+flake8
+nose
+beautifulsoup4
+boto>=2.42.0,<3.0.0

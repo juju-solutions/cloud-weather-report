@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Recent Results
+{% endblock %}
+
+{% from "macros.html" import display_status_img with context %}
+
+{% block bundle_title %}
+    <h2>Recent Results{% if bundle_name %} for {{ bundle_name }}{% endif %}</h2>
+{% endblock %}
+
+
+{% block content %}
+
+    <div class="twelve-col">
+
+        <table>
+            <thead>
+            <tr>
+                <th class="name" scope="col">Bundle</th>
+                <th class="date" scope="col">Date</th>
+                <th class="results" scope="col">Test Results</th>
+            </tr>
+            </thead>
+
+            {% for report in reports %}
+                <tr class="result">
+                    <td class="bundle-name" scope="col">
+                        <a href="{{ report.filename_html }}">{{ report.bundle_name }}</a>
+                    </td>
+                    <td class="bundle-date">
+                        <a href="{{ report.filename_html }}">{{ report.date|humanize_date }}</a>
+                    </td>
+                    <td class="bundle-status">
+                        <a href="{{ report.filename_html }}">
+                        {% for provider in providers %}
+                            <table class="outcome">
+                                <tr><td>{{ provider }}</td></tr>
+                                <tr>
+                                    <td>{{ display_status_img(report.results[provider]) }}</td>
+                                </tr>
+                            </table>
+                        {% endfor %}
+                        </a>
+                    </td>
+                </tr>
+            {% endfor %}
+       </table>
+       <div class="results-legend">
+           <span style="padding-left: 10px">{{  display_status_img('PASS') }}Test Passed</span>
+           <span style="padding-left: 10px">{{  display_status_img('FAIL') }}Test Failed</span>
+           <span style="padding-left: 10px">{{  display_status_img('INFRA') }}Infrastructure Failure</span>
+           <span style="padding-left: 10px">{{  display_status_img('NONE') }}No Test Result</span>
+       </div>
+    </div>
+
+
+{% endblock %}

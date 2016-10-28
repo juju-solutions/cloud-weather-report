@@ -27,7 +27,7 @@ def check_tools():
 
 def install():
     with open('cloudweatherreport/__init__.py', 'rb') as fp:
-        content = fp.read()
+        content = fp.read().decode('utf-8')
     version = str(re.search(r'__version__\s+=\s+\'(.*)\'', content).group(1))
     current_dir = os.path.abspath(os.path.dirname(__file__))
     req_path = os.path.join(current_dir, 'requirements.txt')
@@ -46,7 +46,7 @@ def install():
         include_package_data=True,
         entry_points={
             'console_scripts': [
-                'cwr = cloudweatherreport.run:entry',
+                'cwr = cloudweatherreport.run:entry_point',
             ]
         },
         install_requires=reqs)

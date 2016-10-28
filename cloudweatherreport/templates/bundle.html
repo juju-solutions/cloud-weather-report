@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title -%}
+    {{ report.bundle.name }}
+{%- endblock %}
+
+{% block head %}
+
+        <script type='text/javascript' src='https://code.jquery.com/jquery-3.1.0.min.js'></script>
+        <script type='text/javascript' src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.6/Chart.min.js'></script>
+
+    <script type='text/javascript'>
+        function hide_rows(name) {
+            name = '.' + name;
+            $(name).hide();
+            return false;
+        }
+        function toggle_rows(name) {
+            name = '.' + name;
+            $(name).toggle();
+            return false;
+        }
+        function open_in_new_window(id_name) {
+            var w = window.open();
+            var text = $("#" + id_name).text();
+            if (! /\S/.test(text)) {
+                text = 'Empty'
+            }
+            var html = '<textarea style="width:100%; height:100%">' + text + '</textarea>';
+            $(w.document.body).html(html);
+        }
+
+        function display_chart(index, data) {
+            var ctx = document.getElementById("benchmark-chart-"+index).getContext("2d");
+            var range = data["max"] - data["min"];
+            new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: data['labels'],
+                    datasets: data['datasets']
+                },
+                options: {
+                    title: {
+                        display: true,
+                        text: data["title"],
+                        fontSize: 18
+                    },
+                    scales: {
+                        yAxes: [{
+                            type: "linear",
+                            ticks: {
+                                min: data["min"] - (range * 0.10),
+                                max: data["max"] + (range * 0.10)
+                            },
+                        }]
+                    },
+                    responsive: true
+                }
+            });
+        }
+    </script>
+
+{% endblock %}
+
+
+{% from "macros.html" import display_status_img with context %}
+
+{% block bundle_title %}
+    <div>
+        <h2 class="align-center"><a href="{{ report.bundle.url if report.bundle.url else '#' }}">{{ report.bundle.name }}</a></h2>
+        <span>
+            Date: {{ report.date | replace('T', ' ')}}
+        </span>
+    </div>
+{% endblock %}
+
+
+{% block content %}
+
+    <div class="row">
+
+        <div class="six-col box no-border">
+            <table class="last-result">
+
+
+                {% for result in report.results %}
+                    {% set rowloop = loop %}
+                    <tr onclick="toggle_rows('t{{ rowloop.index }}');" class="result">
+                        <td colspan="2" class="cloud-list">
+                            <a href="javascript:;" title="{{ result.test_id }}">{{ result.provider }}</a>
+                        </td>
+                        <td colspan="2" class="cloud-list" id="total_time_{{ rowloop.index }}" >
+                        </td>
+                        <td class="cloud-list" >
+                            <a href="javascript:;">
+                                {{  display_status_img(result.test_outcome) }}
+                            </a>
+                            <a href="javascript:;" >
+                                <span class="more">&raquo;</span>
+                            </a>
+                        </td>
+                    </tr>
+
+                    {% set total_time = [] %}
+
+                    {% for group in result.tests|groupby('suite') %}
+
+                        {%  if group.grouper %}
+                            <tr class="t{{ rowloop.index }} hide-it suite-title">
+                                <td colspan="5">
+                                    {{ group.grouper }}
+                                </td>
+                            <tr>
+                        {% endif %}
+
+                        {% for test in group.list %}
+
+                            {% if total_time.append(test.duration) %} {% endif %}
+
+                            <script>
+                                $('#total_time_{{ rowloop.index }}').html({{ (total_time|sum|float / 60) | round}} + ' min');
+                            </script>
+
+                            <tr class="t{{ rowloop.index }} hide-it">
+                                <td colspan="2" class="" onclick="open_in_new_window('log-{{ rowloop.index }}{{ loop.index }}')">
+                                    <a href="javascript:;">
+                                        {{ test.name }}
+                                    </a>
+                                </td>
+                                <td colspan="2">
+                                    {{ '%0.2f'% (test.duration / 60)}}
+                                </td>
+                                <td class="">
+                                    {{ display_status_img(test.result) }}
+                                </td>
+                            </tr>
+                            <tr class="output{{ rowloop.index }}{{ loop.index }} hide-it" id="log-{{ rowloop.index }}{{ loop.index }}">
+                                <td colspan="5">
+                                    <textarea cols="7" disabled>
+                                        {{ (test.output or "no output")|safe }}
+                                    </textarea>
+                                </td>
+                            </tr>
+
+                        {% endfor %}
+                    {% endfor %}
+
+                {% endfor %}
+
+            </table>
+        </div>
+
+        <div class="bundle-image six-col last-col box">
+            <div class="align-center" style="text-align: center">
+                {% if svg_data %}
+                    <img src="data:image/svg+xml;base64,{{ svg_data|base64 }}" class="svg-img"  alt="{{ bundle_name }}"/>
+                {% else %}
+                    Image not available
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="twelve-col">
+            {% for benchmark in report.benchmarks %}
+                <canvas id="benchmark-chart-{{ loop.index }}" height="200"></canvas>
+                <script> display_chart({{ loop.index }}, {{ benchmark.as_chart_json()|safe }});</script>
+            {% else %}
+                <div class="chart-title">
+                    Benchmark Data Not Available
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+{% endblock %}
+

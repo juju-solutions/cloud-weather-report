@@ -1,0 +1,11 @@
+{% macro display_status_img(value, size='30px') -%}
+    {% if value == 'PASS'  %}
+        <span class="test-result pass">&#x2714;</span>
+    {% elif value == 'FAIL' %}
+        <span class="test-result fail">&#x2718;</span>
+    {% elif value == 'INFRA' %}
+        <span class="test-result cloud-fail">&#x25B2;</span>
+    {% else %}
+        <span class="test-result no-result">&#x25EF;</span>
+    {% endif %}
+{%- endmacro %}
