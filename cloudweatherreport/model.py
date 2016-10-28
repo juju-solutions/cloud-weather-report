@@ -281,6 +281,7 @@ class TestPlan(BaseModel):
         'bundle_name': basestring,
         'tests': list([basestring]),
         'url': basestring,
+        'test_label': basestring,
     }
 
     @classmethod
@@ -342,6 +343,7 @@ class BundleInfo(BaseModel):
         'relations': None,
         'services': None,
         'url': basestring,
+        'test_label': basestring,
     }
 
 
@@ -692,6 +694,7 @@ class ReportIndexItem(BaseModel):
         'date': datetime,
         'results': dict,  # e.g., {'aws': 'PASS'}
         'url': basestring,
+        'test_label': basestring,
     }
 
     @classmethod

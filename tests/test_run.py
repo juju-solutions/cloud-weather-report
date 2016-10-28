@@ -35,7 +35,7 @@ class TestRunner(unittest.TestCase):
                          [mock.call(p) for p in mload_plans.return_value])
 
     def test_load_index(self):
-        runner = run.Runner('aws', mock.Mock(base_url='http://example.com'))
+        runner = run.Runner('aws', mock.Mock())
         datastore = mock.Mock()
         datastore.read.return_value = '{"providers": ["foo"]}'
 
@@ -51,8 +51,7 @@ class TestRunner(unittest.TestCase):
 
     @mock.patch.object(model.Report, 'upsert_benchmarks')
     def test_load_report(self, mupsert_benchmarks):
-        runner = run.Runner('aws', mock.Mock(
-            test_id='test', base_url='http://example.com'))
+        runner = run.Runner('aws', mock.Mock(test_id='test'))
         test_plan = mock.Mock(bundle='bundle', url='example.com')
         test_plan.report_filename.return_value = 'filename'
         datastore = mock.Mock()
@@ -69,7 +68,6 @@ class TestRunner(unittest.TestCase):
         r2 = runner.load_report(datastore, index, test_plan)
         self.assertIsInstance(r2, model.Report)
         self.assertEqual(r2.test_id, 'test')
-        self.assertEqual(r2.base_url, 'http://example.com')
         assert mupsert_benchmarks.called
 
     @mock.patch('cloudweatherreport.run.logging.error')
@@ -206,29 +204,32 @@ class TestRunner(unittest.TestCase):
         return plan
 
     def test_parse_args_defaults(self):
-        args = run.parse_args(['aws', 'test_plan', '--test-id', '1234',
-                               '--base-url', 'http://example.com/'])
+        args = run.parse_args(['aws', 'test_plan', '--test-id', '1234'])
         expected = argparse.Namespace(
-            base_url='http://example.com/',
+            bucket=None,
             bundle=None,
             controllers=['aws'],
-            deployment=None,
-            dryrun=False,
-            exclude=None,
-            failfast=True,
-            juju_major_version=2,
-            log_level='INFO',
-            no_destroy=False,
-            results_dir='results',
-            skip_implicit=False,
-            test_id='1234',
-            test_pattern=None,
-            test_plan='test_plan',
-            testdir=os.getcwd(),
-            tests_yaml=None,
-            bucket=None,
-            s3_creds=None,
-            verbose=False)
+            deployment = None,
+            dryrun = False,
+            exclude = None,
+            failfast = True,
+            juju_major_version = 2,
+            log_level = 'INFO',
+            no_destroy = False,
+            results_dir = 'results',
+            results_per_bundle = 40,
+            s3_creds = None,
+            s3_public = True,
+            skip_implicit = False,
+            test_id = '1234',
+            test_pattern = None,
+            test_plan = 'test_plan',
+            testdir = '/home/me/dev/cloud-weather-report',
+            tests_yaml = None,
+            verbose = False,
+        )
+
+
         self.assertEqual(args, expected)
 
 

@@ -195,7 +195,8 @@ class TestS3DataStore(TestCase):
         shutil.rmtree(cls.tempdir)
 
     def setUp(self):
-        self.ds = datastore.S3DataStore('prefix', 'bucket', self.credsfile)
+        self.ds = datastore.S3DataStore('prefix', 'bucket', self.credsfile,
+                                        True)
         self.s3conn_p = mock.patch.object(datastore, 'S3Connection')
         self.S3Connection = self.s3conn_p.start()
         self.addCleanup(self.s3conn_p.stop)
