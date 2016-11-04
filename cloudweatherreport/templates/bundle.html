@@ -84,12 +84,12 @@
 
 
                 {% for result in report.results %}
-                    {% set rowloop = loop %}
-                    <tr onclick="toggle_rows('t{{ rowloop.index }}');" class="result">
+                    {% set provider_index = loop.index %}
+                    <tr onclick="toggle_rows('t{{ provider_index }}');" class="result">
                         <td colspan="2" class="cloud-list">
                             <a href="javascript:;" title="{{ result.test_id }}">{{ result.provider }}</a>
                         </td>
-                        <td colspan="2" class="cloud-list" id="total_time_{{ rowloop.index }}" >
+                        <td colspan="2" class="cloud-list" id="total_time_{{ provider_index }}" >
                         </td>
                         <td class="cloud-list" >
                             <a href="javascript:;">
@@ -104,9 +104,10 @@
                     {% set total_time = [] %}
 
                     {% for group in result.tests|groupby('suite') %}
+                        {% set suite_index = loop.index %}
 
                         {%  if group.grouper %}
-                            <tr class="t{{ rowloop.index }} hide-it suite-title">
+                            <tr class="t{{ provider_index }} hide-it suite-title">
                                 <td colspan="5">
                                     {{ group.grouper }}
                                 </td>
@@ -114,15 +115,16 @@
                         {% endif %}
 
                         {% for test in group.list %}
+                            {% set test_index = loop.index %}
 
                             {% if total_time.append(test.duration) %} {% endif %}
 
                             <script>
-                                $('#total_time_{{ rowloop.index }}').html({{ (total_time|sum|float / 60) | round}} + ' min');
+                                $('#total_time_{{ provider_index }}').html({{ (total_time|sum|float / 60) | round}} + ' min');
                             </script>
 
-                            <tr class="t{{ rowloop.index }} hide-it">
-                                <td colspan="2" class="" onclick="open_in_new_window('log-{{ rowloop.index }}{{ loop.index }}')">
+                            <tr class="t{{ provider_index }} hide-it">
+                                <td colspan="2" class="" onclick="open_in_new_window('log-{{ provider_index }}-{{ suite_index }}-{{ test_index }}')">
                                     <a href="javascript:;">
                                         {{ test.name }}
                                     </a>
@@ -134,7 +136,7 @@
                                     {{ display_status_img(test.result) }}
                                 </td>
                             </tr>
-                            <tr class="output{{ rowloop.index }}{{ loop.index }} hide-it" id="log-{{ rowloop.index }}{{ loop.index }}">
+                            <tr class="output hide-it" id="log-{{ provider_index }}-{{ suite_index }}-{{ test_index }}">
                                 <td colspan="5">
                                     <textarea cols="7" disabled>
                                         {{ (test.output or "no output")|safe }}
