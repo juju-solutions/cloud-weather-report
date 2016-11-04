@@ -539,17 +539,18 @@ class SuiteResult(BaseModel):
             output = test.get('output', '')
             lint_or_proof = test_name in ('charm-proof', 'make lint')
             is_exception = 'Traceback' in output
+            lint_exception = lint_or_proof and is_exception
+            no_result = None in (test_name, returncode)
+            amulet_fail = returncode == 200
             if returncode == 0:
                 any_pass = True
                 result_code = 'PASS'
-            elif lint_or_proof and is_exception:
+            elif lint_exception or amulet_fail or no_result:
                 any_infra = True
                 result_code = 'INFRA'
-            elif None not in (test_name, returncode):
+            else:
                 any_fail = True
                 result_code = 'FAIL'
-            else:
-                result_code = 'NONE'
             result.tests.append(TestResult(
                 name=test_name or 'Exception',
                 duration=test.get('duration', 0.0),

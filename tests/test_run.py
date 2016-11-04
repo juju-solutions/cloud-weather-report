@@ -204,7 +204,9 @@ class TestRunner(unittest.TestCase):
         return plan
 
     def test_parse_args_defaults(self):
-        args = run.parse_args(['aws', 'test_plan', '--test-id', '1234'])
+        with mock.patch('os.getcwd') as mgetcwd:
+            mgetcwd.return_value = '/foo'
+            args = run.parse_args(['aws', 'test_plan', '--test-id', '1234'])
         expected = argparse.Namespace(
             bucket=None,
             bundle=None,
@@ -224,7 +226,7 @@ class TestRunner(unittest.TestCase):
             test_id = '1234',
             test_pattern = None,
             test_plan = 'test_plan',
-            testdir = '/home/me/dev/cloud-weather-report',
+            testdir = '/foo',
             tests_yaml = None,
             verbose = False,
         )
