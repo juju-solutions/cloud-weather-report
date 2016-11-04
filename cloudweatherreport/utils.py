@@ -12,6 +12,7 @@ import os
 from shutil import rmtree
 import socket
 import subprocess
+import tempfile
 from tempfile import mkdtemp
 from time import sleep
 import traceback
@@ -195,13 +196,26 @@ def find_unit(unit, status):
 
 
 @contextmanager
-def temp_dir(parent=None, keep=False):
-    directory = mkdtemp(dir=parent)
+def temp_dir(parent=None, keep=False, prefix='cwr-tmp-'):
+    directory = mkdtemp(dir=parent, prefix=prefix)
     try:
         yield directory
     finally:
         if not keep:
             rmtree(directory)
+
+
+@contextmanager
+def temp_tmpdir():
+    with temp_dir() as tmp:
+        tempdir = tempfile.tempdir
+        try:
+            # Setting TMPDIR env doesn't seem to be honoured by Python once
+            # the tempdir is already set.
+            tempfile.tempdir = tmp
+            yield
+        finally:
+            tempfile.tempdir = tempdir
 
 
 @contextmanager
