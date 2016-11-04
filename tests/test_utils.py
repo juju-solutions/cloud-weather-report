@@ -24,7 +24,7 @@ from cloudweatherreport.utils import (
     read_file,
     run_action,
     temp_dir,
-    temp_env,
+    temp_tmpdir,
     wait_for_action_complete,
 )
 from . import common
@@ -263,20 +263,23 @@ class TestUtil(TestCase):
             self.assertFalse(os.path.exists(d))
         self.assertFalse(os.path.exists(p))
 
-    def test_temp_env(self):
+    def test_temp_tmpdir(self):
         with temp_dir() as tmp:
-            with patch('cloudweatherreport.utils.temp_dir', autosec=True) as m:
-                m.return_value.__enter__.return_value = tmp
-                with temp_env():
-                    self.assertEqual(os.environ['TMPDIR'], tmp)
-                    self.assertEqual(gettempdir(), tmp)
+            with patch('cloudweatherreport.utils.temp_dir', autosec=True
+                       ) as md_mock:
+                md_mock.return_value.__enter__.return_value = tmp
+                old_tmpdir = gettempdir()
+                with temp_tmpdir():
+                    self.assertEqual(tmp, gettempdir())
+                    f = NamedTemporaryFile(delete=False)
+                    self.assertEqual(os.path.dirname(f.name), tmp)
+                    self.assertTrue(os.path.exists(
+                        os.path.join(tmp, os.path.basename(f.name))))
                     d = mkdtemp()
-                    f = NamedTemporaryFile()
                     self.assertTrue(os.path.exists(
-                            os.path.join(tmp, os.path.basename(d))))
-                    self.assertTrue(os.path.exists(
-                            os.path.join(tmp, os.path.basename(f.name))))
+                        os.path.join(tmp, os.path.basename(d))))
         self.assertFalse(os.path.exists(tmp))
+        self.assertEqual(old_tmpdir, gettempdir())
 
 
 def get_bundle_yaml():

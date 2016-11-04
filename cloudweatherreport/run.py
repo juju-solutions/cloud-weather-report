@@ -25,7 +25,7 @@ from cloudweatherreport.utils import (
     get_juju_major_version,
     get_versioned_juju_api,
     generate_test_id,
-    temp_env,
+    temp_tmpdir,
 )
 
 
@@ -253,7 +253,7 @@ class Runner(mp.Process):
 def entry_point():
     args = parse_args()
     processes = []
-    with temp_env():
+    with temp_tmpdir():
         for controller in args.controllers:
             processes.append(Runner(controller, args))
             processes[-1].start()

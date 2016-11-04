@@ -12,6 +12,7 @@ import os
 from shutil import rmtree
 import socket
 import subprocess
+import tempfile
 from tempfile import mkdtemp
 from time import sleep
 import traceback
@@ -205,14 +206,16 @@ def temp_dir(parent=None, keep=False, prefix='cwr-tmp-'):
 
 
 @contextmanager
-def temp_env():
+def temp_tmpdir():
     with temp_dir() as tmp:
-        old_tmpdir = os.environ.get('TMPDIR', '')
+        tempdir = tempfile.tempdir
         try:
-            os.environ['TMPDIR'] = tmp
+            # Setting TMPDIR env doesn't seem to be honoured by Python once
+            # the tempdir is already set.
+            tempfile.tempdir = tmp
             yield
         finally:
-            os.environ['TMPDIR'] = old_tmpdir
+            tempfile.tempdir = tempdir
 
 
 @contextmanager
