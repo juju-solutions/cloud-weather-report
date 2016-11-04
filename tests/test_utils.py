@@ -3,6 +3,7 @@ import os
 from shutil import rmtree
 import socket
 from tempfile import (
+    gettempdir,
     NamedTemporaryFile,
     mkdtemp,
 )
@@ -22,6 +23,8 @@ from cloudweatherreport.utils import (
     mkdir_p,
     read_file,
     run_action,
+    temp_dir,
+    temp_env,
     wait_for_action_complete,
 )
 from . import common
@@ -233,6 +236,47 @@ class TestUtil(TestCase):
         status = make_fake_status_juju_2(agent_status='pending')
         started = is_machine_agent_started(status, juju_major_version=2)
         self.assertEqual(started, False)
+
+    def test_temp_dir(self):
+        with temp_dir() as temp:
+            temp_file = os.path.join(temp, 'foo')
+            open(temp_file, "w").close()
+            self.assertTrue(os.path.isdir(temp))
+            self.assertTrue(os.path.exists(temp_file))
+            self.assertIn('cwr-tmp', temp)
+        self.assertFalse(os.path.exists(temp))
+
+    def test_temp_dir_keep(self):
+        with temp_dir() as p:
+            with temp_dir(parent=p, keep=True) as d:
+                self.assertTrue(os.path.isdir(d))
+                open(os.path.join(d, "a-file"), "w").close()
+            self.assertTrue(os.path.exists(d))
+            self.assertTrue(os.path.exists(os.path.join(d, "a-file")))
+        self.assertFalse(os.path.exists(p))
+
+    def test_temp_dir_parent(self):
+        with temp_dir() as p:
+            with temp_dir(parent=p) as d:
+                self.assertTrue(os.path.isdir(d))
+                self.assertEqual(p, os.path.dirname(d))
+            self.assertFalse(os.path.exists(d))
+        self.assertFalse(os.path.exists(p))
+
+    def test_temp_env(self):
+        with temp_dir() as tmp:
+            with patch('cloudweatherreport.utils.temp_dir', autosec=True) as m:
+                m.return_value.__enter__.return_value = tmp
+                with temp_env():
+                    self.assertEqual(os.environ['TMPDIR'], tmp)
+                    self.assertEqual(gettempdir(), tmp)
+                    d = mkdtemp()
+                    f = NamedTemporaryFile()
+                    self.assertTrue(os.path.exists(
+                            os.path.join(tmp, os.path.basename(d))))
+                    self.assertTrue(os.path.exists(
+                            os.path.join(tmp, os.path.basename(f.name))))
+        self.assertFalse(os.path.exists(tmp))
 
 
 def get_bundle_yaml():

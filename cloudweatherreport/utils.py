@@ -195,13 +195,24 @@ def find_unit(unit, status):
 
 
 @contextmanager
-def temp_dir(parent=None, keep=False):
-    directory = mkdtemp(dir=parent)
+def temp_dir(parent=None, keep=False, prefix='cwr-tmp-'):
+    directory = mkdtemp(dir=parent, prefix=prefix)
     try:
         yield directory
     finally:
         if not keep:
             rmtree(directory)
+
+
+@contextmanager
+def temp_env():
+    with temp_dir() as tmp:
+        old_tmpdir = os.environ.get('TMPDIR', '')
+        try:
+            os.environ['TMPDIR'] = tmp
+            yield
+        finally:
+            os.environ['TMPDIR'] = old_tmpdir
 
 
 @contextmanager
