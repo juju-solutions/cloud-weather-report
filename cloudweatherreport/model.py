@@ -541,11 +541,21 @@ class SuiteResult(BaseModel):
             is_exception = 'Traceback' in output
             lint_exception = lint_or_proof and is_exception
             no_result = None in (test_name, returncode)
-            amulet_fail = returncode == 200
+            amulet_infra = returncode == 200
+            deploy_fail = test_name == 'juju-deployer'
+            hook_fail = 'hook failed' in output
+            timeout = 'TimeoutError' in output
+            infra_fail = any([
+                lint_exception,
+                amulet_infra,
+                deploy_fail and not hook_fail,
+                timeout,
+                no_result,
+            ])
             if returncode == 0:
                 any_pass = True
                 result_code = 'PASS'
-            elif lint_exception or amulet_fail or no_result:
+            elif infra_fail:
                 any_infra = True
                 result_code = 'INFRA'
             else:
