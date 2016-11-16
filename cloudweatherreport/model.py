@@ -541,7 +541,7 @@ class SuiteResult(BaseModel):
             is_exception = 'Traceback' in output
             lint_exception = lint_or_proof and is_exception
             no_result = None in (test_name, returncode)
-            amulet_infra = returncode == 200
+            amulet_infra = returncode == 200 or 'SystemExit: 200' in output
             deploy_fail = test_name == 'juju-deployer'
             hook_fail = 'hook failed' in output
             timeout = 'TimeoutError' in output
