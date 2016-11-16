@@ -254,11 +254,14 @@ def entry_point():
     args = parse_args()
     processes = []
     with temp_tmpdir():
-        for controller in args.controllers:
-            processes.append(Runner(controller, args))
-            processes[-1].start()
-        for p in processes:
-            p.join()
+        if len(args.controllers) > 1:
+            for controller in args.controllers:
+                processes.append(Runner(controller, args))
+                processes[-1].start()
+            for p in processes:
+                p.join()
+        else:
+            Runner(args.controllers[0], args).run()
 
 
 if __name__ == '__main__':
