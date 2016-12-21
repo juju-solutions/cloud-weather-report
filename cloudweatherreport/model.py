@@ -332,6 +332,16 @@ class TestPlan(BaseModel):
     def report_filename(self, test_id):
         return Report(
             test_id=test_id,
+            bundle=BundleInfo(name=self.bundle_name, url=self.url),
+        ).filename_json
+
+    def old_report_filename(self, test_id):
+        """
+        Deprecated file name based on the `bundle` field instead of
+        the `bundle_name` field.
+        """
+        return Report(
+            test_id=test_id,
             bundle=BundleInfo(name=self.bundle, url=self.url),
         ).filename_json
 
@@ -339,6 +349,7 @@ class TestPlan(BaseModel):
 class BundleInfo(BaseModel):
     fields = {
         'machines': None,
+        'ref': basestring,
         'name': basestring,
         'relations': None,
         'services': None,
@@ -777,7 +788,8 @@ class ReportIndex(BaseModel):
         which was created just prior to the given report.
         """
         for index_item in self.reports:
-            if index_item.bundle_name != report.bundle.name:
+            if index_item.bundle_name not in (report.bundle.name,
+                                              report.bundle.ref):
                 continue
             if index_item.date < report.date:
                 return index_item
