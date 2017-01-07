@@ -105,15 +105,20 @@ class Runner(mp.Process):
 
     def load_report(self, datastore, index, test_plan):
         filename = test_plan.report_filename(self.test_id)
+        old_filename = test_plan.old_report_filename(self.test_id)
         if datastore.exists(filename):
             report = model.Report.from_json(datastore.read(filename))
+        elif datastore.exists(old_filename):
+            report = model.Report.from_json(datastore.read(old_filename))
         else:
             report = model.Report(
                 version=2,
                 test_id=self.test_id,
                 date=datetime.now(),
                 bundle=model.BundleInfo(
-                    name=test_plan.bundle, url=test_plan.url),
+                    ref=test_plan.bundle,
+                    name=test_plan.bundle_name,
+                    url=test_plan.url),
             )
             prev_report = index.find_previous_report(report)
             if prev_report:
