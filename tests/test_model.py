@@ -305,11 +305,12 @@ class TestTestPlan(TestCase):
     @mock.patch.object(model, 'Report')
     def test_report_filename(self, mReport):
         mReport.return_value.filename_json = 'report.json'
-        plan = model.TestPlan(bundle='cs:my-bundle')
+        plan = model.TestPlan(bundle='cs:my-bundle',
+                              bundle_name='cs:my-charm')
         self.assertEqual(plan.report_filename('test-id'), 'report.json')
         mReport.assert_called_once_with(
             test_id='test-id',
-            bundle=model.BundleInfo(name='cs:my-bundle'),
+            bundle=model.BundleInfo(name='cs:my-charm'),
         )
 
 
