@@ -1,4 +1,4 @@
-PyYAML>=3.11
+PyYAML==3.11
 bundletester
 jujuclient>=0.53.0,<1.0.0
 Jinja2
