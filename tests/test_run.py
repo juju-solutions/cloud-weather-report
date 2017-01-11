@@ -1,6 +1,5 @@
 import unittest
 import argparse
-import os
 import mock
 from shutil import rmtree
 from tempfile import mkdtemp
@@ -52,7 +51,9 @@ class TestRunner(unittest.TestCase):
     @mock.patch.object(model.Report, 'upsert_benchmarks')
     def test_load_report(self, mupsert_benchmarks):
         runner = run.Runner('aws', mock.Mock(test_id='test'))
-        test_plan = mock.Mock(bundle='bundle', url='example.com')
+        test_plan = mock.Mock(bundle='bundle',
+                              bundle_name='name',
+                              url='example.com')
         test_plan.report_filename.return_value = 'filename'
         datastore = mock.Mock()
         datastore.read.return_value = '{"test_id": "foo"}'
@@ -211,26 +212,25 @@ class TestRunner(unittest.TestCase):
             bucket=None,
             bundle=None,
             controllers=['aws'],
-            deployment = None,
-            dryrun = False,
-            exclude = None,
-            failfast = True,
-            juju_major_version = 2,
-            log_level = 'INFO',
-            no_destroy = False,
-            results_dir = 'results',
-            results_per_bundle = 40,
-            s3_creds = None,
-            s3_public = True,
-            skip_implicit = False,
-            test_id = '1234',
-            test_pattern = None,
-            test_plan = 'test_plan',
-            testdir = '/foo',
-            tests_yaml = None,
-            verbose = False,
+            deployment=None,
+            dryrun=False,
+            exclude=None,
+            failfast=True,
+            juju_major_version=2,
+            log_level='INFO',
+            no_destroy=False,
+            results_dir='results',
+            results_per_bundle=40,
+            s3_creds=None,
+            s3_public=True,
+            skip_implicit=False,
+            test_id='1234',
+            test_pattern=None,
+            test_plan='test_plan',
+            testdir='/foo',
+            tests_yaml=None,
+            verbose=False,
         )
-
 
         self.assertEqual(args, expected)
 
