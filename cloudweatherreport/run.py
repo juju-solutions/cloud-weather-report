@@ -6,10 +6,10 @@ from cStringIO import StringIO
 from datetime import datetime
 import logging
 import os
+import sys
 import traceback
 from copy import copy
 from pkg_resources import resource_string
-from sys import exit
 
 from bundletester import tester
 
@@ -99,7 +99,7 @@ class Runner(mp.Process):
             if not self.run_plan(test_plan):
                 any_fail = True
         if self.set_exit_code:
-            exit(any_fail)
+            sys.exit(any_fail)
         else:
             return any_fail
 
