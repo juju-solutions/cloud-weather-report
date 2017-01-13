@@ -27,14 +27,14 @@ class TestRunner(unittest.TestCase):
     @mock.patch.object(model.TestPlan, 'load_plans')
     def test_run(self, mload_plans):
         mload_plans.return_value = [mock.Mock(), mock.Mock()]
-        runner = run.Runner('aws', mock.Mock())
+        runner = run.Runner('aws', False, mock.Mock())
         runner.run_plan = mock.Mock()
         runner.run()
         self.assertEqual(runner.run_plan.call_args_list,
                          [mock.call(p) for p in mload_plans.return_value])
 
     def test_load_index(self):
-        runner = run.Runner('aws', mock.Mock())
+        runner = run.Runner('aws', False, mock.Mock())
         datastore = mock.Mock()
         datastore.read.return_value = '{"providers": ["foo"]}'
 
@@ -50,7 +50,7 @@ class TestRunner(unittest.TestCase):
 
     @mock.patch.object(model.Report, 'upsert_benchmarks')
     def test_load_report(self, mupsert_benchmarks):
-        runner = run.Runner('aws', mock.Mock(test_id='test'))
+        runner = run.Runner('aws', False, mock.Mock(test_id='test'))
         test_plan = mock.Mock(bundle='bundle',
                               bundle_name='name',
                               url='example.com')
@@ -75,7 +75,7 @@ class TestRunner(unittest.TestCase):
     @mock.patch('cloudweatherreport.run.connect_juju_client')
     def test_run_plan_no_env(self, mock_juju, mock_logging):
         mock_juju.return_value = None
-        runner = run.Runner('aws', mock.Mock())
+        runner = run.Runner('aws', False, mock.Mock())
         res = runner.run_plan(mock.Mock())
         assert mock_juju.called
         assert mock_logging.called
@@ -105,7 +105,7 @@ class TestRunner(unittest.TestCase):
                             return_value = ['bundle']
                         mock_index.return_value.bundle_index_filename.\
                             return_value = 'bundle/index.html'
-                        runner = run.Runner('aws', mock.Mock())
+                        runner = run.Runner('aws', False, mock.Mock())
                         runner.run_plan(mock.Mock())
         rmtree(tempdir)
         # Assert we tried to get the Juju env run the tests and benchmarks
@@ -128,7 +128,7 @@ class TestRunner(unittest.TestCase):
                                side_effect=Exception()) as mock_result:
             with mock.patch.object(run.Runner, 'run_benchmarks',
                                    return_value=""):
-                runner = run.Runner('aws', mock.Mock())
+                runner = run.Runner('aws', False, mock.Mock())
                 res = runner.run_plan(mock.Mock())
         # Assert we tried to get the Juju env run the tests but
         # since we failed to run the tests we return false
@@ -139,7 +139,7 @@ class TestRunner(unittest.TestCase):
     @mock.patch('bundletester.tester.main')
     @mock.patch.object(model.SuiteResult, 'from_bundletester_output')
     def test_run_tests(self, bt_out, tester_main):
-        runner = run.Runner('aws', mock.Mock())
+        runner = run.Runner('aws', False, mock.Mock())
         env = mock.Mock()
         status = mock.Mock()
         status.bundle_yaml.return_value = mock.Mock()
@@ -159,7 +159,7 @@ class TestRunner(unittest.TestCase):
         mock_unit.return_value = "unit/0"
         env = mock.Mock()
         plan = self.get_plan()
-        runner = run.Runner('aws', mock.Mock())
+        runner = run.Runner('aws', False, mock.Mock())
         runner.run_benchmarks(plan, env)
         assert mock_log_error.called
 
@@ -168,7 +168,7 @@ class TestRunner(unittest.TestCase):
         mock_unit.return_value = None
         env = mock.Mock()
         plan = self.get_plan()
-        runner = run.Runner('aws', mock.Mock())
+        runner = run.Runner('aws', False, mock.Mock())
         with self.assertRaises(Exception):
             runner.run_benchmarks(plan, env)
 
@@ -181,7 +181,7 @@ class TestRunner(unittest.TestCase):
         mock_result.return_value = "Result"
         env = mock.Mock()
         plan = self.get_plan()
-        runner = run.Runner('aws', mock.Mock())
+        runner = run.Runner('aws', False, mock.Mock())
         benchmarks = runner.run_benchmarks(plan, env)
         self.assertEqual(len(benchmarks), 3)
 

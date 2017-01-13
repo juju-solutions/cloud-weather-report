@@ -6,6 +6,7 @@ from cStringIO import StringIO
 from datetime import datetime
 import logging
 import os
+import sys
 import traceback
 from copy import copy
 from pkg_resources import resource_string
@@ -84,16 +85,23 @@ def parse_args(argv=None):
 
 
 class Runner(mp.Process):
-    def __init__(self, controller, cli_args, *args, **kwargs):
+    def __init__(self, controller, set_exit_code, cli_args, *args, **kwargs):
         super(Runner, self).__init__(*args, **kwargs)
         self.controller = controller
         self.args = copy(cli_args)
         self.test_id = self.args.test_id
+        self.set_exit_code = set_exit_code
 
     def run(self):
         test_plans = model.TestPlan.load_plans(self.args.test_plan)
+        any_fail = False
         for test_plan in test_plans:
-            self.run_plan(test_plan)
+            if not self.run_plan(test_plan):
+                any_fail = True
+        if self.set_exit_code:
+            sys.exit(any_fail)
+        else:
+            return any_fail
 
     def load_index(self, datastore):
         index_filename = model.ReportIndex.full_index_filename_json
@@ -193,7 +201,7 @@ class Runner(mp.Process):
                     index.bundle_index_json(bundle_name),
                     index.as_json(bundle_name,
                                   limit=self.args.results_per_bundle))
-        return True
+        return test_result.test_outcome == "PASS"
 
     def run_tests(self, test_plan, env):
         """
@@ -260,13 +268,21 @@ def entry_point():
     processes = []
     with temp_tmpdir():
         if len(args.controllers) > 1:
+
             for controller in args.controllers:
-                processes.append(Runner(controller, args))
+                processes.append(Runner(controller, True, args))
                 processes[-1].start()
+            overall_fail = False
             for p in processes:
                 p.join()
+                if p.exitcode:
+                    overall_fail = True
+            return overall_fail
+
         else:
-            Runner(args.controllers[0], args).run()
+            exitcode = Runner(args.controllers[0], False, args).run()
+            return exitcode
+    return True
 
 
 if __name__ == '__main__':
