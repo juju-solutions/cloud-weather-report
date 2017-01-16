@@ -10,6 +10,9 @@ import jinja2
 
 from cloudweatherreport import utils
 
+from xml.etree.ElementTree import Element, SubElement, tostring
+import xml.dom.minidom
+
 
 try:
     basestring
@@ -644,6 +647,38 @@ class Report(BaseModel):
                                base_url='../../')
         return html
 
+    def as_xml(self):
+        """
+        Serialize this report instance to an XML file.
+        """
+        top = Element('testsuites')
+        for suite in self.results:
+            testsuitename = "{}".format(suite.provider)
+            testsuite = SubElement(top, 'testsuite',
+                                   {"name": testsuitename,
+                                    "tests": "{}".format(len(suite.tests))})
+
+            for test in suite.tests:
+                testcase = SubElement(testsuite, 'testcase',
+                                      {"name": test.name,
+                                       "classname": test.suite,
+                                       "time": "{}".format(test.duration)})
+
+                if test.result != 'PASS':
+                    type = 'error' if test.result == 'FAIL' else 'failure'
+                    errorelement = SubElement(testcase,
+                                              type,
+                                              {"message": test.output or ""})
+                    errorelement.text = test.output or ""
+                else:
+                    okelement = SubElement(testcase, 'system-out')
+                    okelement.text = test.output or ""
+
+        xmlstr = tostring(top, encoding="utf-8")
+        xmlparsed = xml.dom.minidom.parseString(xmlstr)
+        pretty_xml_as_string = xmlparsed.toprettyxml()
+        return pretty_xml_as_string
+
     def _filename(self):
         return '/'.join([
             re.sub(r'[^a-zA-Z0-9]', '_', self.bundle.name),
@@ -658,6 +693,10 @@ class Report(BaseModel):
     @property
     def filename_html(self):
         return self._filename() + '.html'
+
+    @property
+    def filename_xml(self):
+        return self._filename() + '.xml'
 
     def upsert_result(self, result):
         """

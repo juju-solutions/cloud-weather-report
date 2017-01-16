@@ -182,6 +182,7 @@ class Runner(mp.Process):
             datastore.write(index.full_index_filename_html, index.as_html())
             datastore.write(report.filename_json, report.as_json())
             datastore.write(report.filename_html, report.as_html(svg_data))
+            datastore.write(report.filename_xml, report.as_xml())
             datastore.write(index.summary_filename_html, index.summary_html())
             datastore.write(index.summary_filename_json, index.summary_json())
             for bundle_name in index.bundle_names():
