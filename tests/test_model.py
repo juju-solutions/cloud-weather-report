@@ -676,7 +676,7 @@ class TestReport(TestCase):
         self.assertIsNot(bm2, bm)
         self.assertEqual(report.benchmarks, [bm, bm2])
 
-    def test_as_html(self):
+    def test_as_html_xml(self):
         test_dir = os.path.dirname(__file__)
         with open(os.path.join(test_dir, 'data/hadoop-processing.svg')) as fp:
             svg_data = fp.read()
@@ -693,18 +693,21 @@ class TestReport(TestCase):
                             name='charm proof',
                             result='PASS',
                             duration=0.5,
+                            output="Some output"
                         ),
                         model.TestResult(
                             suite='bundle',
                             name='00-setup',
                             result='PASS',
                             duration=0.5,
+                            output="Some other output"
                         ),
                         model.TestResult(
                             suite='mysql',
                             name='00-setup',
                             result='PASS',
                             duration=1.5,
+                            output="Some more output"
                         ),
                     ],
                 ),
@@ -812,6 +815,9 @@ class TestReport(TestCase):
         html = report.as_html(svg_data)
         self.assertNotIn('Image not available', html)
         self.assertIn('src="data:image/svg+xml;base64,', html)
+        xml = report.as_xml()
+        self.assertIn('Some other output', xml)
+        self.assertIn('testsuite', xml)
 
     def test_filename_json(self):
         report = model.Report(
