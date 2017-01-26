@@ -1,10 +1,15 @@
-import unittest
 import argparse
-import mock
+import json
+import os
 from shutil import rmtree
 from tempfile import mkdtemp
-from cloudweatherreport.datastore import DataStore
+import unittest
 
+import mock
+
+from cloudweatherreport.datastore import DataStore
+from cloudweatherreport.utils import temp_dir
+from cloudweatherreport.run import Runner
 
 with mock.patch('deployer.utils.get_juju_major_version', return_value=1):
     # deployer (from bundletester) tries to call out to Juju CLI
@@ -101,9 +106,9 @@ class TestRunner(unittest.TestCase):
                     with mock.patch.object(run.Runner, 'load_report',
                                            return_value=mock.Mock()
                                            ) as mock_load:
-                        mock_index.return_value.bundle_names.\
+                        mock_index.return_value.bundle_names. \
                             return_value = ['bundle']
-                        mock_index.return_value.bundle_index_filename.\
+                        mock_index.return_value.bundle_index_filename. \
                             return_value = 'bundle/index.html'
                         runner = run.Runner('aws', False, mock.Mock())
                         runner.run_plan(mock.Mock())
@@ -185,6 +190,55 @@ class TestRunner(unittest.TestCase):
         benchmarks = runner.run_benchmarks(plan, env)
         self.assertEqual(len(benchmarks), 3)
 
+    def test_remove_test_by_bundle_name(self):
+        index_json = {
+            "providers": [
+                "GCE"
+            ],
+            "reports": [
+                {
+                    "bundle_name": "foo",
+                    "date": "2017-12-06T21:15:56",
+                    "results": {
+                        "AWS": "FAIL"
+                    },
+                    "test_id": "11",
+                    "test_label": None,
+                    "url": None,
+                },
+                {
+                    "bundle_name": "bar",
+                    "date": "2017-11-15T17:44:01",
+                    "results": {
+                        "Azure": "NONE"
+                    },
+                    "test_id": "22",
+                    "test_label": None,
+                    "url": None,
+                }
+
+            ]
+
+        }
+        with temp_dir() as results_dir:
+            full_index = os.path.join(
+                results_dir,  model.ReportIndex.full_index_filename_json)
+            args = run.parse_args(
+                ['aws', 'test_plan', '--remove-test', 'foo', "--results-dir",
+                 results_dir])
+            with open(full_index, 'w') as f:
+                json.dump(index_json, f)
+            runner = Runner(None, False, args)
+            runner.remove_test_by_bundle_name()
+            with open(full_index) as f:
+                result_index = json.load(f)
+            self.assertEqual(len(result_index["reports"]), 1)
+            self.assertEqual(result_index["reports"][0]["bundle_name"], "bar")
+            os.path.isfile(model.ReportIndex.full_index_filename_html)
+            os.path.isfile(model.ReportIndex.summary_filename_html)
+            os.path.isfile(model.ReportIndex.summary_filename_json)
+
+
     def get_plan(self):
         plan = model.TestPlan.from_dict({
             'bundle': 'bundle_name',
@@ -219,6 +273,7 @@ class TestRunner(unittest.TestCase):
             juju_major_version=2,
             log_level='INFO',
             no_destroy=False,
+            remove_test=None,
             results_dir='results',
             results_per_bundle=40,
             s3_creds=None,
