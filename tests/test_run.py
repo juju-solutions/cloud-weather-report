@@ -223,15 +223,17 @@ class TestRunner(unittest.TestCase):
         with temp_dir() as results_dir:
             full_index = os.path.join(
                 results_dir,  model.ReportIndex.full_index_filename_json)
-            args = run.parse_args(
-                ['aws', 'test_plan', '--remove-test', 'foo', "--results-dir",
-                 results_dir])
-            with open(full_index, 'w') as f:
-                json.dump(index_json, f)
-            runner = Runner(None, False, args)
-            runner.remove_test_by_bundle_name()
-            with open(full_index) as f:
-                result_index = json.load(f)
+            with mock.patch('cloudweatherreport.run.get_juju_major_version',
+                            return_value=2) as mock_gjmv:
+                args = run.parse_args(
+                    ['aws', 'test_plan', '--remove-test', 'foo', "--results-dir",
+                     results_dir])
+                with open(full_index, 'w') as f:
+                    json.dump(index_json, f)
+                runner = Runner(None, False, args)
+                runner.remove_test_by_bundle_name()
+                with open(full_index) as f:
+                    result_index = json.load(f)
             self.assertEqual(len(result_index["reports"]), 1)
             self.assertEqual(result_index["reports"][0]["bundle_name"], "bar")
             os.path.isfile(model.ReportIndex.full_index_filename_html)
