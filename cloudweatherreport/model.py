@@ -808,6 +808,13 @@ class ReportIndex(BaseModel):
     summary_filename_html = 'index.html'
     summary_filename_json = 'index.json'
 
+    def remove_by_bundle_name(self, name, dry_run=False):
+        reports = [r for r in self.reports if r.bundle_name == name]
+        if not dry_run:
+            for report in reports:
+                self.reports.remove(report)
+        return reports
+
     def upsert_report(self, report):
         """
         Add or update a single report.

@@ -34,6 +34,10 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('controllers', nargs='+', help="Controller list.")
     parser.add_argument('test_plan', help="Test plan YAML file.")
+    parser.add_argument('--remove-test',
+                        help="Name of the test to be removed. If this is set, "
+                             "the controllers and test_plan arguments will be "
+                             "ignored.")
     parser.add_argument('--results-dir', default='results',
                         help="Directory to store / find results.")
     parser.add_argument('--bucket',
@@ -263,13 +267,40 @@ class Runner(mp.Process):
             logging.info('Benchmark completed.')
         return benchmarks
 
+    def remove_test_by_bundle_name(self):
+        datastore = DataStore.get(
+            self.args.results_dir,
+            self.args.bucket,
+            self.args.s3_creds,
+            self.args.s3_public)
+        with datastore.lock():
+            index = self.load_index(datastore)
+            reports = index.remove_by_bundle_name(
+                self.args.remove_test, self.args.dryrun)
+            if not reports:
+                logging.info("No test result found for {}".format(
+                    self.args.remove_test))
+                return False
+            else:
+                for report in reports:
+                    logging.info("Removing {} id: {}".format(
+                        report.bundle_name, report.test_id))
+            datastore.write(index.full_index_filename_json, index.as_json())
+            datastore.write(index.full_index_filename_html, index.as_html())
+            datastore.write(index.summary_filename_html, index.summary_html())
+            datastore.write(index.summary_filename_json, index.summary_json())
+
+        return True
+
 
 def entry_point():
     args = parse_args()
     processes = []
     with temp_tmpdir():
-        if len(args.controllers) > 1:
+        if args.remove_test:
+            return Runner(None, False, args).remove_test_by_bundle_name()
 
+        if len(args.controllers) > 1:
             for controller in args.controllers:
                 processes.append(Runner(controller, True, args))
                 processes[-1].start()

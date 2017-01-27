@@ -1078,6 +1078,68 @@ class TestReportIndexItem(TestCase):
 
 
 class TestReportIndex(TestCase):
+
+    def test_remove_by_bundle_name(self):
+        report = model.Report(
+            test_id='test',
+            bundle=model.BundleInfo(name='foo'),
+            date=datetime(2000, 1, 1),
+            results=[
+                model.SuiteResult(
+                    provider='gce',
+                    test_outcome='PASS',
+                ),
+            ])
+        report_index = model.ReportIndex()
+        report_index.upsert_report(report)
+        report_2 = model.Report(
+            test_id='test_2',
+            bundle=model.BundleInfo(name='bar'),
+            date=datetime(2000, 2, 2),
+            results=[
+                model.SuiteResult(
+                    provider='aws',
+                    test_outcome='PASS',
+                ),
+            ])
+        report_index.upsert_report(report_2)
+        removed_reports = report_index.remove_by_bundle_name('foo')
+        self.assertEqual(len(removed_reports), 1)
+        self.assertEqual(removed_reports[0].bundle_name, 'foo')
+        self.assertEqual(len(report_index.reports), 1)
+        self.assertEqual(report_index.reports[0].bundle_name, 'bar')
+
+    def test_remove_by_bundle_name_dry_run(self):
+        report = model.Report(
+            test_id='test',
+            bundle=model.BundleInfo(name='foo'),
+            date=datetime(2000, 1, 1),
+            results=[
+                model.SuiteResult(
+                    provider='gce',
+                    test_outcome='PASS',
+                ),
+            ])
+        report_index = model.ReportIndex()
+        report_index.upsert_report(report)
+        report_2 = model.Report(
+            test_id='test_2',
+            bundle=model.BundleInfo(name='bar'),
+            date=datetime(2000, 2, 2),
+            results=[
+                model.SuiteResult(
+                    provider='aws',
+                    test_outcome='PASS',
+                ),
+            ])
+        report_index.upsert_report(report_2)
+        removed_reports = report_index.remove_by_bundle_name('foo', dry_run=True)
+        self.assertEqual(len(removed_reports), 1)
+        self.assertEqual(removed_reports[0].bundle_name, 'foo')
+        self.assertEqual(len(report_index.reports), 2)
+        self.assertEqual(report_index.reports[0].bundle_name, 'bar')
+        self.assertEqual(report_index.reports[1].bundle_name, 'foo')
+
     def test_upsert_report(self):
         ri = model.ReportIndex()
 

@@ -1,0 +1,38 @@
+# Do the following to build this snap:
+#   - snapcraft 
+#   - sudo snap install --classic --dangerous cwr_*.snap
+name: cwr 
+version: 0.4.2
+summary: Test runner for Juju bundles and charms.
+description: |
+    Cloud Weather Report (cwr) enables Juju charm authors and maintainers to 
+    run health checks and benchmarks on multiple clouds.
+
+confinement: classic 
+
+apps:
+  cwr:
+    command: cwr
+  juju:
+    command: bin/juju
+
+parts:
+  cwr:
+    plugin: python
+    python-version: python2
+    source: https://github.com/juju-solutions/cloud-weather-report.git 
+    source-type: git
+    requirements: requirements.txt
+
+    build-packages:
+      - make
+      - unzip
+
+  juju:
+    plugin: godeps
+    go-importpath: github.com/juju/juju
+    source: https://github.com/juju/juju.git
+    source-type: git
+    source-tag: "juju-2.0.2"
+    prime:
+      - bin/juju
