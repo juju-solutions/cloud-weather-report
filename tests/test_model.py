@@ -210,9 +210,6 @@ class TestBaseModel(TestCase):
         self.assertEqual(test_model.test_list[1].test_list, [5, 6])
         self.assertEqual(test_model.test_date, datetime(2000, 1, 1))
         with self.assertRaises(ValueError) as cm:
-            _MockModel.from_dict({'foo': 'bar'})
-        self.assertEqual(str(cm.exception), 'Unknown field: foo')
-        with self.assertRaises(ValueError) as cm:
             _MockModel.from_dict({'test_list': 'bar'})
         self.assertEqual(str(cm.exception), 'Expected list for test_list: bar')
 

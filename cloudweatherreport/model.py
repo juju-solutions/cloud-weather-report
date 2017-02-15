@@ -234,7 +234,7 @@ class BaseModel(object):
 
         for field_name, field_value in value.items():
             if field_name not in self.fields:
-                raise ValueError('Unknown field: {}'.format(field_name))
+                continue
             field_type = self.fields[field_name]
             if isinstance(field_type, list) and field_type:
                 if not isinstance(field_value, list):
