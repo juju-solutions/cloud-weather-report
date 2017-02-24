@@ -273,6 +273,7 @@ class TestRunner(unittest.TestCase):
             log_level='INFO',
             no_destroy=False,
             remove_test=None,
+            regenerate_index=None,
             results_dir='results',
             results_per_bundle=40,
             s3_creds=None,

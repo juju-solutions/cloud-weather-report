@@ -34,6 +34,7 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('controllers', nargs='+', help="Controller list.")
     parser.add_argument('test_plan', help="Test plan YAML file.")
+    parser.add_argument('--regenerate-index')
     parser.add_argument('--remove-test',
                         help="Name of the test to be removed. If this is set, "
                              "the controllers and test_plan arguments will be "
@@ -292,6 +293,20 @@ class Runner(mp.Process):
 
         return True
 
+    def regenerate_index(self):
+        datastore = DataStore.get(
+            self.args.results_dir,
+            self.args.bucket,
+            self.args.s3_creds,
+            self.args.s3_public)
+        with datastore.lock():
+            index = self.load_index(datastore)
+            datastore.write(index.full_index_filename_json, index.as_json())
+            datastore.write(index.full_index_filename_html, index.as_html())
+            datastore.write(index.summary_filename_json, index.summary_json())
+            datastore.write(index.summary_filename_html, index.summary_html())
+        return True
+
 
 def entry_point():
     args = parse_args()
@@ -299,6 +314,8 @@ def entry_point():
     with temp_tmpdir():
         if args.remove_test:
             return Runner(None, False, args).remove_test_by_bundle_name()
+        if args.regenerate_index:
+            return Runner(None, False, args).regenerate_index()
 
         if len(args.controllers) > 1:
             for controller in args.controllers:
