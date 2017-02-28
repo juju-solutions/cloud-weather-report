@@ -83,6 +83,10 @@ def parse_args(argv=None):
     parser.add_argument('--test-pattern', dest="test_pattern")
     parser.add_argument('--test-id', dest="test_id", help="Test ID.",
                         default=generate_test_id())
+    parser.add_argument('--deploy-plan',
+                        help='A plan to deploy charm under')
+    parser.add_argument('--deploy-budget',
+                        help='Deploy budget and allocation limit')
     options = parser.parse_args(argv)
     options.juju_major_version = get_juju_major_version()
     configure_logging(getattr(logging, options.log_level))
