@@ -27,6 +27,7 @@ from cloudweatherreport.utils import (
     get_versioned_juju_api,
     generate_test_id,
     temp_tmpdir,
+    write_to_datastore,
 )
 
 
@@ -34,7 +35,7 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('controllers', nargs='+', help="Controller list.")
     parser.add_argument('test_plan', help="Test plan YAML file.")
-    parser.add_argument('--regenerate-index')
+    parser.add_argument('--regenerate-index', action="store_true")
     parser.add_argument('--remove-test',
                         help="Name of the test to be removed. If this is set, "
                              "the controllers and test_plan arguments will be "
@@ -290,14 +291,12 @@ class Runner(mp.Process):
                 for report in reports:
                     logging.info("Removing {} id: {}".format(
                         report.bundle_name, report.test_id))
-            datastore.write(index.full_index_filename_json, index.as_json())
-            datastore.write(index.full_index_filename_html, index.as_html())
-            datastore.write(index.summary_filename_html, index.summary_html())
-            datastore.write(index.summary_filename_json, index.summary_json())
+            write_to_datastore(datastore, index)
 
         return True
 
     def regenerate_index(self):
+        logging.info('Regenerating index...')
         datastore = DataStore.get(
             self.args.results_dir,
             self.args.bucket,
@@ -305,10 +304,7 @@ class Runner(mp.Process):
             self.args.s3_public)
         with datastore.lock():
             index = self.load_index(datastore)
-            datastore.write(index.full_index_filename_json, index.as_json())
-            datastore.write(index.full_index_filename_html, index.as_html())
-            datastore.write(index.summary_filename_json, index.summary_json())
-            datastore.write(index.summary_filename_html, index.summary_html())
+            write_to_datastore(datastore, index)
         return True
 
 
