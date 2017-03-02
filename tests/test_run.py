@@ -194,7 +194,7 @@ class TestRunner(unittest.TestCase):
             log_level='INFO',
             no_destroy=False,
             output=str_io,
-            regenerate_index=None,
+            regenerate_index=False,
             remove_test=None,
             reporter='json',
             results_dir='results',
@@ -318,10 +318,11 @@ class TestRunner(unittest.TestCase):
             mgetcwd.return_value = '/foo'
             args = run.parse_args(['aws', 'test_plan', '--test-id', '1234'])
         expected = argparse.Namespace(
-            deploy_budget=None,
             bucket=None,
             bundle=None,
             controllers=['aws'],
+            deploy_budget=None,
+            deploy_plan=None,
             deployment=None,
             dryrun=False,
             exclude=None,
@@ -329,9 +330,8 @@ class TestRunner(unittest.TestCase):
             juju_major_version=2,
             log_level='INFO',
             no_destroy=False,
-            deploy_plan=None,
+            regenerate_index=False,
             remove_test=None,
-            regenerate_index=None,
             results_dir='results',
             results_per_bundle=40,
             s3_creds=None,
@@ -344,7 +344,6 @@ class TestRunner(unittest.TestCase):
             tests_yaml=None,
             verbose=False,
         )
-
         self.assertEqual(args, expected)
 
 

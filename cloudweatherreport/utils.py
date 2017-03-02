@@ -301,4 +301,3 @@ def write_to_datastore(datastore, index, update_summary=False):
     datastore.write(index.full_index_filename_html, index.as_html())
     datastore.write(index.summary_filename_json, index.summary_json())
     datastore.write(index.summary_filename_html, index.summary_html())
-
