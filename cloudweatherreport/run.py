@@ -27,6 +27,7 @@ from cloudweatherreport.utils import (
     get_versioned_juju_api,
     generate_test_id,
     temp_tmpdir,
+    write_to_datastore,
 )
 
 
@@ -34,6 +35,7 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument('controllers', nargs='+', help="Controller list.")
     parser.add_argument('test_plan', help="Test plan YAML file.")
+    parser.add_argument('--regenerate-index', action="store_true")
     parser.add_argument('--remove-test',
                         help="Name of the test to be removed. If this is set, "
                              "the controllers and test_plan arguments will be "
@@ -82,6 +84,10 @@ def parse_args(argv=None):
     parser.add_argument('--test-pattern', dest="test_pattern")
     parser.add_argument('--test-id', dest="test_id", help="Test ID.",
                         default=generate_test_id())
+    parser.add_argument('--deploy-plan',
+                        help='A plan to deploy charm under')
+    parser.add_argument('--deploy-budget',
+                        help='Deploy budget and allocation limit')
     options = parser.parse_args(argv)
     options.juju_major_version = get_juju_major_version()
     configure_logging(getattr(logging, options.log_level))
@@ -285,11 +291,20 @@ class Runner(mp.Process):
                 for report in reports:
                     logging.info("Removing {} id: {}".format(
                         report.bundle_name, report.test_id))
-            datastore.write(index.full_index_filename_json, index.as_json())
-            datastore.write(index.full_index_filename_html, index.as_html())
-            datastore.write(index.summary_filename_html, index.summary_html())
-            datastore.write(index.summary_filename_json, index.summary_json())
+            write_to_datastore(datastore, index)
 
+        return True
+
+    def regenerate_index(self):
+        logging.info('Regenerating index...')
+        datastore = DataStore.get(
+            self.args.results_dir,
+            self.args.bucket,
+            self.args.s3_creds,
+            self.args.s3_public)
+        with datastore.lock():
+            index = self.load_index(datastore)
+            write_to_datastore(datastore, index)
         return True
 
 
@@ -299,6 +314,8 @@ def entry_point():
     with temp_tmpdir():
         if args.remove_test:
             return Runner(None, False, args).remove_test_by_bundle_name()
+        if args.regenerate_index:
+            return Runner(None, False, args).regenerate_index()
 
         if len(args.controllers) > 1:
             for controller in args.controllers:

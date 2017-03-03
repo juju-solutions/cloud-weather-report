@@ -1,4 +1,5 @@
 import argparse
+from cStringIO import StringIO
 import json
 import os
 from shutil import rmtree
@@ -157,6 +158,62 @@ class TestRunner(unittest.TestCase):
         # The result is the Mock returned by SuiteResult
         self.assertIsInstance(result, mock.Mock)
 
+    @mock.patch('bundletester.tester.main')
+    @mock.patch.object(model.SuiteResult, 'from_bundletester_output')
+    def test_run_tests_with_args(self, bt_out, tester_main):
+        args = run.parse_args(
+            ['aws', 'test_plan', '--test-id', '1234', '--deploy-plan', 'foo',
+             '--deploy-budget', 'bar', '--testdir', '/tmp/testdir'])
+        runner = run.Runner('aws', False, args)
+        env = mock.Mock(spec_set=['name', 'provider_name'])
+        env.name = 'env-name'
+        status = mock.Mock()
+        status.bundle_yaml.return_value = mock.Mock(spec_set=[])
+        tester_main.return_value = status
+        bt_out.return_value = status
+        plan = mock.Mock(spec_set=['tests', 'bundle_file', 'bundle'])
+        plan.tests = 'foo-tests'
+        plan.bundle_file = 'foo-bundle-file'
+        plan.bundle = 'foo-bundle'
+        str_io = StringIO()
+        with mock.patch('cloudweatherreport.run.StringIO', autospec=True,
+                        return_value=str_io) as string_mock:
+            result = runner.run_tests(plan, env)
+        expected_args = argparse.Namespace(
+            bucket=None,
+            bundle='foo-bundle-file',
+            controllers=['aws'],
+            deploy_budget='bar',
+            deploy_plan='foo',
+            deployment=None,
+            dryrun=False,
+            environment='env-name',
+            exclude=None,
+            failfast=True,
+            juju_major_version=2,
+            log_level='INFO',
+            no_destroy=False,
+            output=str_io,
+            regenerate_index=False,
+            remove_test=None,
+            reporter='json',
+            results_dir='results',
+            results_per_bundle=40,
+            s3_creds=None,
+            s3_public=True,
+            skip_implicit=False,
+            test_id='1234',
+            test_pattern=None,
+            test_plan='test_plan',
+            testdir='foo-bundle',
+            tests='foo-tests',
+            tests_yaml=None,
+            verbose=False)
+        tester_main.assert_called_once_with(expected_args)
+        string_mock.assert_called_once_with()
+        assert bt_out.called
+        self.assertIsInstance(result, mock.Mock)
+
     @mock.patch('cloudweatherreport.run.logging.error')
     @mock.patch('cloudweatherreport.run.find_unit')
     def test_run_benchmarks_action_fail(self, mock_unit, mock_log_error):
@@ -237,7 +294,6 @@ class TestRunner(unittest.TestCase):
             os.path.isfile(model.ReportIndex.summary_filename_html)
             os.path.isfile(model.ReportIndex.summary_filename_json)
 
-
     def get_plan(self):
         plan = model.TestPlan.from_dict({
             'bundle': 'bundle_name',
@@ -265,6 +321,8 @@ class TestRunner(unittest.TestCase):
             bucket=None,
             bundle=None,
             controllers=['aws'],
+            deploy_budget=None,
+            deploy_plan=None,
             deployment=None,
             dryrun=False,
             exclude=None,
@@ -272,6 +330,7 @@ class TestRunner(unittest.TestCase):
             juju_major_version=2,
             log_level='INFO',
             no_destroy=False,
+            regenerate_index=False,
             remove_test=None,
             results_dir='results',
             results_per_bundle=40,
@@ -285,7 +344,6 @@ class TestRunner(unittest.TestCase):
             tests_yaml=None,
             verbose=False,
         )
-
         self.assertEqual(args, expected)
 
 

@@ -150,7 +150,8 @@ class TestUtil(TestCase):
 
     def test_connect_juju_client(self):
         with patch.object(utils, 'get_juju_major_version', return_value=2):
-            with patch('jujuclient.juju2.environment.Environment', autospec=True) as jc_mock:
+            with patch('jujuclient.juju2.environment.Environment',
+                       autospec=True) as jc_mock:
                 jc_mock.connect.return_value = 'bar'
                 env = connect_juju_client('foo', 1)
         jc_mock.connect.assert_called_once()
@@ -158,7 +159,8 @@ class TestUtil(TestCase):
 
     def test_connect_juju_client_socket_timeout(self):
         with patch.object(utils, 'get_juju_major_version', return_value=2):
-            with patch('jujuclient.juju2.environment.Environment', autospec=True) as jc_mock:
+            with patch('jujuclient.juju2.environment.Environment',
+                       autospec=True) as jc_mock:
                 jc_mock.connect.side_effect = socket.timeout
                 env = connect_juju_client('foo', 2)
         self.assertEqual(jc_mock.connect.mock_calls,

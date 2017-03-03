@@ -1130,7 +1130,8 @@ class TestReportIndex(TestCase):
                 ),
             ])
         report_index.upsert_report(report_2)
-        removed_reports = report_index.remove_by_bundle_name('foo', dry_run=True)
+        removed_reports = report_index.remove_by_bundle_name(
+            'foo', dry_run=True)
         self.assertEqual(len(removed_reports), 1)
         self.assertEqual(removed_reports[0].bundle_name, 'foo')
         self.assertEqual(len(report_index.reports), 2)
