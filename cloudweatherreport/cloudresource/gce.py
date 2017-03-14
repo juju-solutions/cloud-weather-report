@@ -4,7 +4,6 @@ from libcloud.compute.types import Provider
 from libcloud.compute.providers import get_driver
 from libcloud.common.google import ResourceNotFoundError
 
-
 from cloudweatherreport.cloudresource import CloudResource
 
 
