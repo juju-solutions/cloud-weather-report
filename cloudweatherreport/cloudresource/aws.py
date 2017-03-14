@@ -1,41 +1,49 @@
 import logging
 
-import libcloud
+from libcloud.compute.providers import get_driver
+from libcloud.compute.types import Provider
 
 from cloudweatherreport.cloudresource import CloudResource
+
 
 __metaclass__ = type
 
 
 class AWS(CloudResource):
+    """Determines if the requested resources are available for AWS cloud."""
 
     def __init__(self, access_key, secret_key, region, instance_limit=20,
                  security_group_limit=500):
-        super(AWS, self).__init__(instance_limit, security_group_limit)
+        super(AWS, self).__init__(instance_limit, security_group_limit, None)
         self.client = make_client(access_key, secret_key, region)
 
-    def is_instance_available(self, instance_needed):
-        nodes = self.client.list_nodes()
-        terminated = [n for n in nodes if n.state == 'terminated']
-        instance_count = len(nodes) - len(terminated)
-        logging.info("Instance needed:{} count:{} terminated:{} total:{} "
-                 "limit:{}".format(
-                    instance_needed, instance_count, len(terminated),
-                    len(nodes), self.instance_limit))
-        return self.is_resource_available(
-            self.instance_limit, instance_count, instance_needed)
+    def is_instance_available(self, number_of_instances, _=None):
+        """Return True if the number of requested instances are available.
 
-    def is_security_group_available(self, security_group_needed):
-        security_group_count = len(self.client.ex_list_security_groups())
-        logging.info("Security group needed:{} count:{} limit:{}".format(
-            security_group_needed, security_group_count,
-            self.security_group_limit))
+        :param number_of_instances: Number of requested instance.
+        :param _: Number of CPUs are ignored for AWS.
+        :return: boolean
+        """
+        nodes = self.client.list_nodes()
+        terminated = len([n for n in nodes if n.state == 'terminated'])
+        instance_count = len(nodes) - terminated
+        logging.debug("AWS total instance:{} terminated:{} ".format(
+            nodes, terminated))
         return self.is_resource_available(
-            self.security_group_limit, security_group_count,
-            security_group_needed)
+            number_of_instances, instance_count, self.instance_limit)
+
+    def is_security_group_available(self, request):
+        """Return True if the num of requested security groups are available.
+
+        :param request: Number of requested security groups.
+        :return: boolean
+        """
+        security_group_count = len(self.client.ex_list_security_groups())
+        logging.debug("AWS security groups.")
+        return self.is_resource_available(
+            request, security_group_count, self.security_group_limit)
 
 
 def make_client(access_key, secret_key, region):
-    aws_driver = libcloud.compute.providers.get_driver(
-        libcloud.compute.types.Provider.EC2)
+    aws_driver = get_driver(Provider.EC2)
     return aws_driver(access_key, secret_key, region=region)

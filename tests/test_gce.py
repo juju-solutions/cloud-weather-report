@@ -135,25 +135,19 @@ class TestGCE(TestCase):
 
 def make_fake_node(zone_name='us-west1-a', state='running',
                    machine_type='http://...g1-small'):
-    extra = {
-        'zone': FakeZone(zone_name),
-        'machineType': machine_type}
+    extra = {'zone': FakeZone(zone_name), 'machineType': machine_type}
     node = FakeNode(extra=extra, state=state)
     return node
 
 
 def make_fake_sizes():
-    return [
-        make_fake_size('us-west1-a', 'http://...g1-small', 1),
-        make_fake_size('us-west1-b', 'http://...h1-highcpu-4', 4)]
+    return [make_fake_size('us-west1-a', 'http://...g1-small', 1),
+            make_fake_size('us-west1-b', 'http://...h1-highcpu-4', 4)]
 
 
 def make_fake_size(zone, self_link, guest_cpus):
-    extra = {
-        'selfLink': self_link,
-        'zone': FakeZone(name=zone),
-        'guestCpus': guest_cpus
-    }
+    extra = {'selfLink': self_link, 'zone': FakeZone(name=zone),
+             'guestCpus': guest_cpus}
     return FakeSize(extra=extra)
 
 
@@ -168,10 +162,9 @@ def make_fake_regions():
 def make_fake_client(number_of_security_group=1):
     client = Mock(spec=['ex_get_region', 'ex_list_regions', 'list_sizes',
                         'list_nodes', 'ex_list_firewalls'])
-    nodes = [
-            make_fake_node(zone_name='us-west1-a'),
-            make_fake_node(zone_name='europe-west1-a'),
-            make_fake_node(zone_name='us-west1-a', state='terminated')]
+    nodes = [make_fake_node(zone_name='us-west1-a'),
+             make_fake_node(zone_name='europe-west1-a'),
+             make_fake_node(zone_name='us-west1-a', state='terminated')]
     client.list_nodes.return_value = nodes
     client.ex_list_regions.return_value = make_fake_regions()
     client.list_sizes.return_value = make_fake_sizes()
