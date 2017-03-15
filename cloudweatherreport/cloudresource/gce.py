@@ -29,12 +29,14 @@ class GCE(CloudResource):
         nodes = self.client.list_nodes()
         nodes = self.filter_by_region(nodes)
         # Remove terminated
-        nodes = [n for n in nodes if n.state != 'terminated']
+        nodes = filter(lambda n: n.state != 'terminated', nodes)
         instance_count = len(nodes)
+
         logging.info('GCE instance request')
         instance_available = self.is_resource_available(
             number_of_instances, instance_count, self.instance_limit)
         cpu_count = sum([self.get_cpu_size_from_node(n) for n in nodes])
+
         logging.info('GCE CPU resource request')
         cpu_available = self.is_resource_available(
             number_of_cpus, cpu_count, self.cpu_limit)
