@@ -1,3 +1,4 @@
+apache-libcloud
 PyYAML==3.11
 bundletester
 jujuclient>=0.53.0,<1.0.0
