@@ -109,7 +109,7 @@ class DataStore(object):
             while active_lock != lock_filename:
                 log.debug('Lock already acquired {} age:{} sec.'.format(
                     active_lock, int(self.age_in_seconds(active_lock))))
-                self.delete_old_lock(active_lock, old_lock_age)
+                self.delete_lock_if_old(active_lock, old_lock_age)
                 sleep(wait_secs)
                 total_waited += wait_secs
                 if total_waited >= timeout:
@@ -137,7 +137,7 @@ class DataStore(object):
             return '{}.{}.{}'.format(uuid4(), job_name, build_number)
         return uuid4()
 
-    def delete_old_lock(self, lock, old_age):
+    def delete_lock_if_old(self, lock, old_age):
         """Delete a lock older than old_age."""
         age = self.age_in_seconds(lock)
         if old_age is not None and age > old_age:

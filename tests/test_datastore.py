@@ -79,8 +79,8 @@ class TestDataStore(TestCase):
     @mock.patch.object(datastore.DataStore, '_active_lock_filename')
     @mock.patch.object(datastore.DataStore, 'write')
     @mock.patch.object(datastore.DataStore, 'age_in_seconds')
-    def test_lock_delete_old_lock(self, ds_age, ds_write, ds_alf, ds_delete,
-                                  ds_sleep, ds_uuid4):
+    def test_delete_lock_if_old(self, ds_age, ds_write, ds_alf, ds_delete,
+                                ds_sleep, ds_uuid4):
         ds = datastore.DataStore('prefix')
         ds_uuid4.return_value = 'new'
         ds_age.return_value = 10
@@ -220,17 +220,17 @@ class TestLocalDataStore(TestCase):
         age = self.ds.age_in_seconds('file1')
         self.assertGreater(age, 0)
 
-    def test_delete_old_lock(self):
+    def test_delete_lock_if_old(self):
         self.ds.write('.lock.1', '')
         self.assertIs(self.ds.exists('.lock.1'), True)
-        self.ds.delete_old_lock('.lock.1',  old_age=0)
+        self.ds.delete_lock_if_old('.lock.1', old_age=0)
         self.assertIs(self.ds.exists('.lock.1'), False)
 
-    def test_delete_old_lock_ignore_old_locks(self):
+    def test_delete_lock_if_old_ignore_locks(self):
         lock = '.lock.1'
         self.ds.write(lock, '')
         self.assertIs(self.ds.exists(lock), True)
-        self.ds.delete_old_lock(lock, old_age=3600)
+        self.ds.delete_lock_if_old(lock, old_age=3600)
         self.assertIs(self.ds.exists(lock), True)
         self.ds.delete(lock)
 
@@ -344,15 +344,15 @@ class TestS3DataStore(TestCase):
             age = self.ds.age_in_seconds('test_del')
         self.assertEqual(int(age), 1800)
 
-    def test_delete_old_lock(self):
+    def test_delete_lock_if_old(self):
         self.ds.bucket.get_key.return_value = self.make_key()
         lock = '.lock.1'
         self.ds.write(lock, '')
         with mock.patch.object(self.ds, 'delete', autospec=True) as del_mock:
-            self.ds.delete_old_lock(lock, old_age=0)
+            self.ds.delete_lock_if_old(lock, old_age=0)
         del_mock.assert_called_once_with(lock)
 
-    def test_delete_old_ignore_old_locks(self):
+    def test_delete_lock_if_old_ignore_locks(self):
         key = self.make_key()
         self.ds.bucket.get_key.return_value = key
         old_age = (datetime.datetime.utcnow() - datetime.datetime.strptime(
@@ -360,7 +360,7 @@ class TestS3DataStore(TestCase):
         lock = '.lock.1'
         self.ds.write(lock, '')
         with mock.patch.object(self.ds, 'delete', autospec=True) as del_mock:
-            self.ds.delete_old_lock(lock, old_age=old_age+100)
+            self.ds.delete_lock_if_old(lock, old_age=old_age + 100)
         self.assertIs(del_mock.called, False)
 
     def make_key(self):
