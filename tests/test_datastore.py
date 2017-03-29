@@ -1,3 +1,4 @@
+import datetime
 import os
 import shutil
 from unittest import TestCase
@@ -23,9 +24,12 @@ class TestDataStore(TestCase):
     @mock.patch.object(datastore.DataStore, 'delete')
     @mock.patch.object(datastore.DataStore, '_active_lock_filename')
     @mock.patch.object(datastore.DataStore, 'write')
-    def test_lock(self, ds_write, ds_alf, ds_delete, ds_sleep, ds_uuid4):
+    @mock.patch.object(datastore.DataStore, 'age_in_seconds')
+    def test_lock(self, ds_age, ds_write, ds_alf, ds_delete, ds_sleep,
+                  ds_uuid4):
         ds = datastore.DataStore('prefix')
         ds_uuid4.return_value = 'uuid'
+        ds_age.return_value = 1
 
         # test no contest
         ds_alf.return_value = '.lock.uuid'
@@ -69,6 +73,26 @@ class TestDataStore(TestCase):
         ])
         ds_delete.assert_called_once_with('.lock.uuid')
 
+    @mock.patch.object(datastore, 'uuid4')
+    @mock.patch.object(datastore, 'sleep')
+    @mock.patch.object(datastore.DataStore, 'delete')
+    @mock.patch.object(datastore.DataStore, '_active_lock_filename')
+    @mock.patch.object(datastore.DataStore, 'write')
+    @mock.patch.object(datastore.DataStore, 'age_in_seconds')
+    def test_delete_lock_if_old(self, ds_age, ds_write, ds_alf, ds_delete,
+                                ds_sleep, ds_uuid4):
+        ds = datastore.DataStore('prefix')
+        ds_uuid4.return_value = 'new'
+        ds_age.return_value = 10
+        ds_alf.side_effect = ['.lock.old', '.lock.new']
+        with ds.lock(old_lock_age=5) as lock_id:
+            pass
+        expected_calls = [mock.call('.lock.old'), mock.call('.lock.new')]
+        self.assertEqual(ds_delete.call_args_list, expected_calls)
+        self.assertEqual(lock_id, 'new')
+        ds_write.assert_called_once_with('.lock.new', '')
+        ds_sleep.assert_called_once_with(1)
+
     @mock.patch.object(datastore.DataStore, 'list')
     def test_active_lock_filename(self, ds_list):
         ds_list.return_value = [
@@ -84,6 +108,21 @@ class TestDataStore(TestCase):
             'qux',
         ]
         self.assertIsNone(ds._active_lock_filename())
+
+    @mock.patch('cloudweatherreport.datastore.uuid4')
+    def test_create_lock_id(self, uuid_mock):
+        uuid_mock.return_value = '1234'
+        job_name_org = os.getenv('JOB_NAME', '')
+        build_num_org = os.getenv('BUILD_NUMBER', '')
+        try:
+            os.environ['JOB_NAME'] = 'foo'
+            os.environ['BUILD_NUMBER'] = 'bar'
+            ds = datastore.DataStore('prefix')
+            lock_id = ds.create_lock_id()
+        finally:
+            os.environ['JOB_NAME'] = job_name_org
+            os.environ['BUILD_NUMBER'] = build_num_org
+        self.assertEqual(lock_id, '1234.foo.bar')
 
 
 class TestLocalDataStore(TestCase):
@@ -176,6 +215,24 @@ class TestLocalDataStore(TestCase):
                 with self.assertRaises(datastore.TimeoutError):
                     with self.ds.lock(timeout=1):
                         self.fail('Secondary lock should fail')
+
+    def test_age_in_seconds(self):
+        age = self.ds.age_in_seconds('file1')
+        self.assertGreater(age, 0)
+
+    def test_delete_lock_if_old(self):
+        self.ds.write('.lock.1', '')
+        self.assertIs(self.ds.exists('.lock.1'), True)
+        self.ds.delete_lock_if_old('.lock.1', old_age=0)
+        self.assertIs(self.ds.exists('.lock.1'), False)
+
+    def test_delete_lock_if_old_ignore_locks(self):
+        lock = '.lock.1'
+        self.ds.write(lock, '')
+        self.assertIs(self.ds.exists(lock), True)
+        self.ds.delete_lock_if_old(lock, old_age=3600)
+        self.assertIs(self.ds.exists(lock), True)
+        self.ds.delete(lock)
 
 
 class TestS3DataStore(TestCase):
@@ -275,3 +332,38 @@ class TestS3DataStore(TestCase):
     def test_delete(self):
         self.ds.delete('test_del')
         self.ds.bucket.delete_key.assert_called_once_with('prefix/test_del')
+
+    def test_age_in_seconds(self):
+        self.ds.bucket.get_key.return_value = self.make_key()
+        # 30 min diff from last_modified date
+        date = datetime.datetime(2017, 3, 28, 13, 30, 0, 0)
+        # Can't patch datetime.datetime.utcnow, Maybe it is implemented in C
+        dt_mock = mock.Mock(wraps=datetime.datetime)
+        with mock.patch.object(datetime, 'datetime', dt_mock) as date_mock:
+            date_mock.utcnow.return_value = date
+            age = self.ds.age_in_seconds('test_del')
+        self.assertEqual(int(age), 1800)
+
+    def test_delete_lock_if_old(self):
+        self.ds.bucket.get_key.return_value = self.make_key()
+        lock = '.lock.1'
+        self.ds.write(lock, '')
+        with mock.patch.object(self.ds, 'delete', autospec=True) as del_mock:
+            self.ds.delete_lock_if_old(lock, old_age=0)
+        del_mock.assert_called_once_with(lock)
+
+    def test_delete_lock_if_old_ignore_locks(self):
+        key = self.make_key()
+        self.ds.bucket.get_key.return_value = key
+        old_age = (datetime.datetime.utcnow() - datetime.datetime.strptime(
+            key.last_modified, '%a, %d %b %Y %H:%M:%S %Z')).total_seconds()
+        lock = '.lock.1'
+        self.ds.write(lock, '')
+        with mock.patch.object(self.ds, 'delete', autospec=True) as del_mock:
+            self.ds.delete_lock_if_old(lock, old_age=old_age + 100)
+        self.assertIs(del_mock.called, False)
+
+    def make_key(self):
+        key = mock.Mock()
+        key.last_modified = 'Tue, 28 Mar 2017 13:00:00 GMT'
+        return key
