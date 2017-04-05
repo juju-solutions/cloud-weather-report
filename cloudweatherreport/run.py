@@ -14,6 +14,12 @@ from pkg_resources import resource_string
 from bundletester import tester
 
 from cloudweatherreport import model
+from cloudweatherreport.cloudresource.resource import (
+    is_resource_available,
+    UnknownCloudName,
+    UnknownCredentialName,
+    CloudNotSupported,
+)
 from cloudweatherreport.datastore import DataStore
 from cloudweatherreport.utils import (
     configure_logging,
@@ -146,6 +152,63 @@ class Runner(mp.Process):
                 report.upsert_benchmarks(prev_report.benchmarks)
         return report
 
+    def check_cloud_resource(self, test_plan, cloud_info):
+        """Check if resources are available for a cloud.
+
+        This check against the default resource limits. These limits can be
+        changed by updating the following system environment variables:
+          {CLOUD-NAME}_MACHINE_LIMIT
+          {CLOUD-NAME}_SECURITY_GROUP_LIMIT
+          {CLOUD-NAME}_CPU_LIMIT
+        Example to change the limits for AWS, use AWS_MACHINE_LIMIT,
+        AWS_SECURITY_GROUP_LIMIT, AWS_CPU_LIMIT variables.
+
+        :param test_plan: CWR test plan.
+        :param cloud_info: Cloud info containing region and cloud name.
+        """
+        cloud = cloud_info['cloud-tag'].replace("cloud-", "")
+        region = cloud_info['cloud-region']
+        if (test_plan.cloud_resource is None or
+                test_plan.cloud_resource.get('machines') is None or
+                test_plan.cloud_resource.get('cpus') is None):
+            logging.info(
+                'Skipping cloud resource check. Add "cloud_resource" field in '
+                'the test plan to check for resources before performing tests')
+            return None
+        cloud_env = cloud.upper()
+
+        try:
+            machine_limit = int(
+                os.getenv('{}_MACHINE_LIMIT'.format(cloud_env)))
+        except (TypeError, ValueError):
+            machine_limit = None
+        try:
+            sec_limit = int(
+                os.getenv('{}_SECURITY_GROUP_LIMIT'.format(cloud_env)))
+        except (TypeError, ValueError):
+            sec_limit = None
+        try:
+            cpu_limit = int(os.getenv('{}_CPU_LIMIT'.format(cloud_env)))
+        except (TypeError, ValueError):
+            cpu_limit = None
+
+        try:
+            return is_resource_available(
+                cloud=cloud, region=region,
+                num_of_instances=test_plan.cloud_resource['machines'],
+                num_of_security_groups=1,
+                num_of_cpus=test_plan.cloud_resource['cpus'],
+                instance_limit=machine_limit,
+                security_group_limit=sec_limit,
+                cpu_limit=cpu_limit,
+                credentials_name=os.getenv('{}')
+            )
+        except (CloudNotSupported, UnknownCloudName,
+                UnknownCredentialName) as e:
+            logging.error(
+                'Skipping cloud resource check: {}'.format(str(e)))
+            return None
+
     def run_plan(self, test_plan):
         env = connect_juju_client(self.controller, logging=logging)
         if not env:
@@ -153,28 +216,44 @@ class Runner(mp.Process):
                 self.controller))
             return False
         env.name = self.controller
-        provider = (env.info().get("provider-type") or
-                    env.info().get("ProviderType"))
+        env_info = env.info()
+        provider = (env_info.get("provider-type") or
+                    env_info.get("ProviderType"))
         env.provider_name = get_provider_name(provider)
+
         logging.info('Running test on {}.'.format(env.provider_name))
-        try:
-            test_result = self.run_tests(test_plan, env)
-            benchmark_results = self.run_benchmarks(test_plan, env)
-        except Exception:
-            tb = traceback.format_exc()
-            error = "Exception ({}):\n{}".format(env.name, tb)
-            logging.error(error)
-            # create a fake SuiteResult to hold exception traceback
+        resource_available = self.check_cloud_resource(test_plan, env_info)
+        if resource_available is False:
             test_result = model.SuiteResult(
                 provider=env.provider_name,
-                test_outcome='Error Running Tests',
+                test_outcome='INFRA',
                 tests=[model.TestResult(
-                    name='Error Running Tests',
+                    name='Resource not available',
                     duration=0.0,
-                    output=error,
+                    output='Resource not available',
                     result='INFRA',
+                    suite='Resource not available'
                 )])
-            return False
+            benchmark_results = []
+        else:
+            try:
+                test_result = self.run_tests(test_plan, env)
+                benchmark_results = self.run_benchmarks(test_plan, env)
+            except Exception:
+                tb = traceback.format_exc()
+                error = "Exception ({}):\n{}".format(env.name, tb)
+                logging.error(error)
+                # create a fake SuiteResult to hold exception traceback
+                test_result = model.SuiteResult(
+                    provider=env.provider_name,
+                    test_outcome='Error Running Tests',
+                    tests=[model.TestResult(
+                        name='Error Running Tests',
+                        duration=0.0,
+                        output=error,
+                        result='INFRA',
+                    )])
+                return False
 
         datastore = DataStore.get(
             self.args.results_dir,
@@ -331,7 +410,6 @@ def entry_point():
         else:
             exitcode = Runner(args.controllers[0], False, args).run()
             return exitcode
-    return True
 
 
 if __name__ == '__main__':

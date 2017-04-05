@@ -163,7 +163,8 @@ def create_bundle_yaml(name=None):
 
 def configure_logging(log_level=logging.WARNING):
     logging.basicConfig(
-        level=log_level, format='%(asctime)s %(levelname)s %(message)s',
+        level=log_level,
+        format='%(filename)s:%(asctime)s %(levelname)s %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S')
 
 
@@ -301,3 +302,9 @@ def write_to_datastore(datastore, index, update_summary=False):
     datastore.write(index.full_index_filename_html, index.as_html())
     datastore.write(index.summary_filename_json, index.summary_json())
     datastore.write(index.summary_filename_html, index.summary_html())
+
+
+def juju_cmd(cmd):
+    cmd = cmd.split() if isinstance(cmd, str) else cmd
+    cmd = ['juju'] + cmd
+    return subprocess.check_output(cmd)
