@@ -201,12 +201,13 @@ class Runner(mp.Process):
                 instance_limit=machine_limit,
                 security_group_limit=sec_limit,
                 cpu_limit=cpu_limit,
-                credentials_name=os.getenv('{}')
+                credentials_name=os.getenv('JUJU_CREDENTIAL_NAME')
             )
-        except (CloudNotSupported, UnknownCloudName,
-                UnknownCredentialName) as e:
+        except (UnknownCloudName, UnknownCredentialName) as e:
             logging.error(
                 'Skipping cloud resource check: {}'.format(str(e)))
+        except CloudNotSupported as e:
+            logging.info('Skipping cloud resource check: {}'.format(str(e)))
             return None
 
     def run_plan(self, test_plan):

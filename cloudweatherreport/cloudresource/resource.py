@@ -25,9 +25,17 @@ def get_credential_name(creds, cloud_name):
         'default-credential')
     if cred_name:
         return cred_name
-    # If no default credential name, get the first name from the list
+
     names = list(creds.get('credentials', {}).get(cloud_name, {}).keys())
-    return sorted(names)[0]
+    try:
+        names.remove('default-region')
+    except ValueError:
+        pass
+    if len(names) > 1:
+        raise ValueError(
+            'More than one credential is available. Set default juju '
+            'credential or set JUJU_CREDENTIAL_NAME system variable.')
+    return names[0]
 
 
 def get_credentials(cloud, name=None):

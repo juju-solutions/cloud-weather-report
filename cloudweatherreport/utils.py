@@ -307,4 +307,4 @@ def write_to_datastore(datastore, index, update_summary=False):
 def juju_cmd(cmd):
     cmd = cmd.split() if isinstance(cmd, str) else cmd
     cmd = ['juju'] + cmd
-    return subprocess.check_output(cmd)
+    return subprocess.check_output(cmd).decode('utf-8')

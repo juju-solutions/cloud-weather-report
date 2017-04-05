@@ -29,7 +29,7 @@ class TestGetCredentials(TestCase):
                 access-key: aws-access-key2
                 secret-key: aws-secret-key2
         google:
-            default-credentials: cred
+            default-credential: cred
             cred:
                 auth-type: oauth
                 client-email: thedude@example.com
@@ -41,6 +41,7 @@ class TestGetCredentials(TestCase):
     fake_creds_no_default = dedent("""\
     credentials:
         aws:
+            default-region: us-west-2
             cred4:
                 auth-type: access-key4
                 access-key: aws-access-key4
@@ -86,12 +87,10 @@ class TestGetCredentials(TestCase):
         self.assertEqual(creds, expected)
 
     @patch('subprocess.check_output', autospec=True)
-    def test_get_credentials_no_default_creds(self, cc_mock):
+    def test_get_credentials_more_than_one_credential(self, cc_mock):
         cc_mock.return_value = self.fake_creds_no_default
-        creds = get_credentials('aws')
-        expected = safe_load(self.fake_creds_no_default)
-        expected = expected['credentials']['aws']['cred3']
-        self.assertEqual(creds, expected)
+        with self.assertRaisesRegexp(ValueError, "More than one credential"):
+            get_credentials('aws')
 
         creds = get_credentials('google')
         expected = safe_load(self.fake_creds_no_default)
@@ -132,15 +131,15 @@ class TestIsResourceAvailable(TestCase):
     def test_is_resource_available_aws(self, aws_mock, cc_mock):
         aws_mock.return_value.is_security_group_available.return_value = True
         aws_mock.return_value.is_instance_available.return_value = True
-        cc_mock.return_value = TestGetCredentials.fake_creds_no_default
+        cc_mock.return_value = TestGetCredentials.fake_creds
         result = is_resource_available('aws', 'us-west-1', 1, 1, 1)
         self.assertIs(result, True)
         cc_mock.assert_called_once_with(
             ['juju', 'list-credentials', 'aws', '--format', 'yaml',
              '--show-secrets'])
         aws_mock.assert_called_once_with(
-            access_key='aws-access-key3', instance_limit=20,
-            region='us-west-1', secret_key='aws-secret-key3',
+            access_key='aws-access-key', instance_limit=20,
+            region='us-west-1', secret_key='aws-secret-key',
             security_group_limit=500)
 
     @patch('subprocess.check_output', autospec=True)
