@@ -27,6 +27,7 @@ from cloudweatherreport.utils import (
     find_unit,
     fetch_svg,
     get_provider_name,
+    guess_provider_name,
     run_action,
     get_bundle_yaml,
     get_juju_major_version,
@@ -213,49 +214,47 @@ class Runner(mp.Process):
     def run_plan(self, test_plan):
         env = connect_juju_client(self.controller, logging=logging)
         if not env:
-            logging.error("Jujuclient could not connect to {} ".format(
-                self.controller))
+            msg = "Jujuclient could not connect to {} ".format(self.controller)
+            logging.error(msg)
+            test_result = self.generate_test_result(
+                provider=get_provider_name(
+                    guess_provider_name(self.controller)),
+                test_name="Juju client failed", output=msg)
+            self.save_result_in_datastore(test_result, [], test_plan)
             return False
+
         env.name = self.controller
         env_info = env.info()
         provider = (env_info.get("provider-type") or
                     env_info.get("ProviderType"))
         env.provider_name = get_provider_name(provider)
-
         logging.info('Running test on {}.'.format(env.provider_name))
         resource_available = self.check_cloud_resource(test_plan, env_info)
         if resource_available is False:
-            test_result = model.SuiteResult(
-                provider=env.provider_name,
-                test_outcome='INFRA',
-                tests=[model.TestResult(
-                    name='Resource not available',
-                    duration=0.0,
-                    output='Resource not available',
-                    result='INFRA',
-                    suite='Resource not available'
-                )])
-            benchmark_results = []
-        else:
-            try:
-                test_result = self.run_tests(test_plan, env)
-                benchmark_results = self.run_benchmarks(test_plan, env)
-            except Exception:
-                tb = traceback.format_exc()
-                error = "Exception ({}):\n{}".format(env.name, tb)
-                logging.error(error)
-                # create a fake SuiteResult to hold exception traceback
-                test_result = model.SuiteResult(
-                    provider=env.provider_name,
-                    test_outcome='Error Running Tests',
-                    tests=[model.TestResult(
-                        name='Error Running Tests',
-                        duration=0.0,
-                        output=error,
-                        result='INFRA',
-                    )])
-                return False
+            msg = 'Resource not available'
+            logging.error(msg)
+            test_result = self.generate_test_result(
+                provider=env.provider_name, test_name=msg, output=msg)
+            self.save_result_in_datastore(test_result, [], test_plan)
+            return False
 
+        benchmark_result = []
+        try:
+            test_result = self.run_tests(test_plan, env)
+            benchmark_result = self.run_benchmarks(test_plan, env)
+        except Exception:
+            tb = traceback.format_exc()
+            error = "Exception ({}):\n{}".format(env.name, tb)
+            logging.error(error)
+            # create a fake SuiteResult to hold exception traceback
+            test_result = self.generate_test_result(
+                provider=env.provider_name, test_name='Exception',
+                output=error)
+        self.save_result_in_datastore(test_result, benchmark_result, test_plan)
+        return test_result.test_outcome == "PASS"
+
+    def save_result_in_datastore(self, test_result, benchmark_results,
+                                 test_plan):
         datastore = DataStore.get(
             self.args.results_dir,
             self.args.bucket,
@@ -292,7 +291,24 @@ class Runner(mp.Process):
                     index.bundle_index_json(bundle_name),
                     index.as_json(bundle_name,
                                   limit=self.args.results_per_bundle))
-        return test_result.test_outcome == "PASS"
+
+    @staticmethod
+    def generate_test_result(provider, test_name, output, suite='Error',
+                             test_outcome=None, bundle_yaml=None):
+        test_outcome = test_outcome or model.TEST_OUTCOMES.infra
+        if test_outcome not in list(model.TEST_OUTCOMES):
+            raise ValueError('Invalid test outcome value.')
+        return model.SuiteResult(
+                    provider=provider,
+                    test_outcome=test_outcome,
+                    bundle_yaml=bundle_yaml,
+                    tests=[model.TestResult(
+                        name=test_name,
+                        duration=0.0,
+                        output=output,
+                        result=test_outcome,
+                        suite=suite
+                    )])
 
     def run_tests(self, test_plan, env):
         """

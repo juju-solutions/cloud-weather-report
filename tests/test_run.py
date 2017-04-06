@@ -81,10 +81,13 @@ class TestRunner(unittest.TestCase):
     def test_run_plan_no_env(self, mock_juju, mock_logging):
         mock_juju.return_value = None
         runner = run.Runner('aws', False, mock.Mock())
-        res = runner.run_plan(mock.Mock())
+        with mock.patch.object(
+                run.Runner, 'save_result_in_datastore') as mock_srd:
+            res = runner.run_plan(mock.Mock())
         assert mock_juju.called
         assert mock_logging.called
         self.assertFalse(res)
+        assert mock_srd.called
 
     @mock.patch('cloudweatherreport.run.DataStore.get')
     @mock.patch('cloudweatherreport.run.get_provider_name')
@@ -140,14 +143,29 @@ class TestRunner(unittest.TestCase):
                                    return_value=""):
                 with mock.patch.object(
                         run.Runner, 'check_cloud_resource') as mock_cr:
-                    runner = run.Runner('aws', False, mock.Mock())
-                    res = runner.run_plan(test_plan)
+                    with mock.patch.object(
+                            run.Runner, 'save_result_in_datastore') as mock_sr:
+                        runner = run.Runner('aws', False, mock.Mock())
+                        res = runner.run_plan(test_plan)
         # Assert we tried to get the Juju env run the tests but
         # since we failed to run the tests we return false
         assert mock_juju.called
         assert mock_result.called
         self.assertFalse(res)
+        assert mock_sr.called
         mock_cr.assert_called_once_with(test_plan, {'ProviderType': 'foo'})
+
+    def test_generate_test_result(self):
+        result = run.Runner.generate_test_result('aws', 'smoke', 'error')
+        self.assertIsInstance(result, model.SuiteResult)
+        self.assertEqual(result.provider, 'aws')
+        self.assertEqual(result.tests[0].name, 'smoke')
+        self.assertEqual(result.tests[0].output, 'error')
+
+    def test_generate_test_result_error(self):
+        with self.assertRaisesRegexp(ValueError, 'Invalid test outcome value'):
+            run.Runner.generate_test_result(
+                'aws', 'smoke', 'error', test_outcome='foo')
 
     @mock.patch('bundletester.tester.main')
     @mock.patch.object(model.SuiteResult, 'from_bundletester_output')

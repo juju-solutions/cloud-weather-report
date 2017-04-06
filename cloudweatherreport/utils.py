@@ -1,10 +1,10 @@
+
 from contextlib import contextmanager
 from datetime import (
     datetime,
     timedelta,
 )
 import errno
-import json
 import jujuclient.juju1
 import jujuclient.juju2
 import logging
@@ -136,6 +136,7 @@ def get_provider_name(provider_type):
             'maas': 'MAAS',
             'openstack': 'OpenStack',
             'vsphere': 'vSphere',
+            'lxd': 'LXD',
             }
     try:
         return name[provider_type]
@@ -239,22 +240,6 @@ def get_versioned_juju_api(version=None):
     return jujuclient.juju1 if version == 1 else jujuclient.juju2
 
 
-def generate_test_result(output, test='Exception', returncode=1, duration=0,
-                         suite=''):
-    results = {
-        'tests': [
-            {
-                'test': test,
-                'returncode': returncode,
-                'duration': duration,
-                'output': output,
-                'suite':  suite,
-            }
-        ]
-    }
-    return json.dumps(results)
-
-
 def connect_juju_client(env_name, retries=3, logging=None):
     """Connect to jujuclient."""
     env = None
@@ -308,3 +293,25 @@ def juju_cmd(cmd):
     cmd = cmd.split() if isinstance(cmd, str) else cmd
     cmd = ['juju'] + cmd
     return subprocess.check_output(cmd).decode('utf-8')
+
+
+def guess_provider_name(controller_name):
+    """Guess provider name from the controller name.
+
+    If connection to the juju_client fails, no way to know the actual cloud
+    provider name. This can be used to guess the provider name.
+    :param controller_name: Controller name
+    """
+    controller_name = controller_name.lower()
+    if 'gce' in controller_name or 'google' in controller_name:
+        return 'gce'
+    if 'azure' in controller_name:
+        return 'azure'
+    if 'maas' in controller_name:
+        return 'maas'
+    if 'openstack' in controller_name:
+        return 'openstack'
+    if ('lxc' in controller_name or 'local' in controller_name or
+            'lxc' in controller_name):
+        return 'lxd'
+    return 'aws'
