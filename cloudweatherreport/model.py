@@ -285,6 +285,7 @@ class TestPlan(BaseModel):
         'tests': list([basestring]),
         'url': basestring,
         'test_label': basestring,
+        'cloud_resource': dict,
     }
 
     @classmethod

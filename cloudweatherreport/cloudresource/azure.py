@@ -8,12 +8,17 @@ from cloudweatherreport.cloudresource import CloudResource
 
 __metaclass__ = type
 
+INSTANCE_LIMIT = 60
+SECURITY_GROUP_LIMIT = 100
+CORE_LIMIT = 20
+
 
 class Azure(CloudResource):
 
     def __init__(self, tenant_id, subscription_id, application_id,
-                 application_password, region, instance_limit=60,
-                 security_group_limit=100, core_limit=20):
+                 application_password, region, instance_limit=INSTANCE_LIMIT,
+                 security_group_limit=SECURITY_GROUP_LIMIT,
+                 core_limit=CORE_LIMIT):
         super(Azure, self).__init__(
             instance_limit, security_group_limit, core_limit)
         self.client = make_client(
@@ -30,12 +35,13 @@ class Azure(CloudResource):
         nodes = filter(lambda n: n.state != 'terminated', nodes)
 
         instance_count = len(nodes)
-        logging.info('Azure instance request')
+        logging.info('Azure instance request. Region:{}'.format(self.region))
         instance_available = self.is_resource_available(
             number_of_instances, instance_count, self.instance_limit)
 
         cpu_count = sum([self.get_cpu_size_from_node(n) for n in nodes])
-        logging.info('GCE CPU resource request')
+        logging.info(
+            'Azure CPU resource request. Region:{}'.format(self.region))
         cpu_available = self.is_resource_available(
             number_of_cpus, cpu_count, self.cpu_limit)
         return cpu_available and instance_available

@@ -97,6 +97,7 @@ class TestRunner(unittest.TestCase):
         tempdir = mkdtemp()
         ds = DataStore.get(tempdir)
         mock_datastore.return_value = ds
+        test_plan = mock.Mock()
         with mock.patch.object(run.Runner, 'run_tests',
                                return_value=mock.Mock()) as mock_result:
             with mock.patch.object(run.Runner, 'run_benchmarks',
@@ -110,8 +111,10 @@ class TestRunner(unittest.TestCase):
                             return_value = ['bundle']
                         mock_index.return_value.bundle_index_filename. \
                             return_value = 'bundle/index.html'
-                        runner = run.Runner('aws', False, mock.Mock())
-                        runner.run_plan(mock.Mock())
+                        with mock.patch.object(
+                                run.Runner, 'check_cloud_resource') as mock_cr:
+                            runner = run.Runner('aws', False, mock.Mock())
+                            runner.run_plan(test_plan)
         rmtree(tempdir)
         # Assert we tried to get the Juju env run the tests and benchmarks
         # and load the report and index
@@ -121,6 +124,7 @@ class TestRunner(unittest.TestCase):
         assert mock_index.called
         assert mock_load.called
         self.assertTrue(True)
+        mock_cr.assert_called_once_with(test_plan, {'ProviderType': 'foo'})
 
     @mock.patch('cloudweatherreport.run.get_provider_name')
     @mock.patch('cloudweatherreport.run.connect_juju_client')
@@ -129,17 +133,21 @@ class TestRunner(unittest.TestCase):
         env.info.return_value = {"ProviderType": "foo"}
         mock_juju.return_value = env
         mock_provider.return_value = "foo-provider"
+        test_plan = mock.Mock()
         with mock.patch.object(run.Runner, 'run_tests',
                                side_effect=Exception()) as mock_result:
             with mock.patch.object(run.Runner, 'run_benchmarks',
                                    return_value=""):
-                runner = run.Runner('aws', False, mock.Mock())
-                res = runner.run_plan(mock.Mock())
+                with mock.patch.object(
+                        run.Runner, 'check_cloud_resource') as mock_cr:
+                    runner = run.Runner('aws', False, mock.Mock())
+                    res = runner.run_plan(test_plan)
         # Assert we tried to get the Juju env run the tests but
         # since we failed to run the tests we return false
         assert mock_juju.called
         assert mock_result.called
         self.assertFalse(res)
+        mock_cr.assert_called_once_with(test_plan, {'ProviderType': 'foo'})
 
     @mock.patch('bundletester.tester.main')
     @mock.patch.object(model.SuiteResult, 'from_bundletester_output')
@@ -345,6 +353,44 @@ class TestRunner(unittest.TestCase):
             verbose=False,
         )
         self.assertEqual(args, expected)
+
+    @mock.patch(
+        'cloudweatherreport.run.is_resource_available')
+    def test_check_cloud_resource(self, ira_mock):
+        cloud_resource = {'machines': 1, 'cpus': 2}
+        test_plan = mock.Mock(
+            cloud_resource=cloud_resource, spec_set=['cloud_resource'])
+        cloud_info = {'cloud-tag': 'cloud-aws', 'cloud-region': 'us-west'}
+        runner = run.Runner('aws', False, mock.Mock())
+        runner.check_cloud_resource(test_plan, cloud_info)
+        ira_mock.assert_called_once_with(
+            cloud='aws', cpu_limit=None, credentials_name=None,
+            instance_limit=None, num_of_cpus=2, num_of_instances=1,
+            num_of_security_groups=1, region='us-west',
+            security_group_limit=None)
+
+    @mock.patch(
+        'cloudweatherreport.run.is_resource_available')
+    def test_check_cloud_resource_with_limits(self, ira_mock):
+        cloud_resource = {'machines': 1, 'cpus': 2}
+        test_plan = mock.Mock(
+            cloud_resource=cloud_resource, spec_set=['cloud_resource'])
+        cloud_info = {'cloud-tag': 'cloud-aws', 'cloud-region': 'us-west'}
+        runner = run.Runner('aws', False, mock.Mock())
+        os.environ['AWS_MACHINE_LIMIT'] = '10'
+        os.environ['AWS_SECURITY_GROUP_LIMIT'] = '50'
+        os.environ['AWS_CPU_LIMIT'] = '20'
+        try:
+            runner.check_cloud_resource(test_plan, cloud_info)
+        finally:
+            del os.environ['AWS_MACHINE_LIMIT']
+            del os.environ['AWS_SECURITY_GROUP_LIMIT']
+            del os.environ['AWS_CPU_LIMIT']
+        ira_mock.assert_called_once_with(
+            cloud='aws', cpu_limit=20, credentials_name=None,
+            instance_limit=10, num_of_cpus=2, num_of_instances=1,
+            num_of_security_groups=1, region='us-west',
+            security_group_limit=50)
 
 
 if __name__ == '__main__':

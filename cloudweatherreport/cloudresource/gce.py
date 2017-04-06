@@ -6,12 +6,18 @@ from libcloud.common.google import ResourceNotFoundError
 
 from cloudweatherreport.cloudresource import CloudResource
 
+INSTANCE_LIMIT = 200
+SECURITY_GROUP_LIMIT = 100
+CPU_LIMIT = 24
+
 
 class GCE(CloudResource):
     """Determines if the requested resources are available for GCE cloud."""
 
     def __init__(self, sa_email, key, region, project_id,
-                 instance_limit=200, security_group_limit=100, cpu_limit=24):
+                 instance_limit=INSTANCE_LIMIT,
+                 security_group_limit=SECURITY_GROUP_LIMIT,
+                 cpu_limit=CPU_LIMIT):
         super(GCE, self).__init__(
             instance_limit, security_group_limit, cpu_limit)
         self.region = region
@@ -32,12 +38,12 @@ class GCE(CloudResource):
         nodes = filter(lambda n: n.state != 'terminated', nodes)
         instance_count = len(nodes)
 
-        logging.info('GCE instance request')
+        logging.info('GCE instance request. Region:{}'.format(self.region))
         instance_available = self.is_resource_available(
             number_of_instances, instance_count, self.instance_limit)
         cpu_count = sum([self.get_cpu_size_from_node(n) for n in nodes])
 
-        logging.info('GCE CPU resource request')
+        logging.info('GCE CPU resource request. Region:{}'.format(self.region))
         cpu_available = self.is_resource_available(
             number_of_cpus, cpu_count, self.cpu_limit)
         return cpu_available and instance_available
@@ -80,7 +86,8 @@ class GCE(CloudResource):
         :return: boolean
         """
         security_group_count = len(self.client.ex_list_firewalls())
-        logging.info("GCE security groups resource request")
+        logging.info("GCE security groups resource request. Region:{}".format(
+            self.region))
         return self.is_resource_available(
             request, security_group_count, self.security_group_limit)
 
