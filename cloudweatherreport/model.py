@@ -1,3 +1,4 @@
+from collections import namedtuple
 import re
 import json
 import yaml
@@ -22,6 +23,11 @@ except NameError:
 
 
 log = logging.getLogger(__name__)
+
+
+TestOutcomes = namedtuple('TestOutcome', 'passed fail infra none')
+TEST_OUTCOMES = TestOutcomes(
+    passed='PASS', fail='FAIL', infra='INFRA', none='NONE')
 
 
 # ******** Base types
