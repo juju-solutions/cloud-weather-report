@@ -95,6 +95,9 @@ def parse_args(argv=None):
                         help='A plan to deploy charm under')
     parser.add_argument('--deploy-budget',
                         help='Deploy budget and allocation limit')
+    parser.add_argument('--no-matrix', action="store_true",
+                        help="Skip matrix test run, even if juju-matrix is "
+                        "in your path.")
     options = parser.parse_args(argv)
     options.juju_major_version = get_juju_major_version()
     configure_logging(getattr(logging, options.log_level))

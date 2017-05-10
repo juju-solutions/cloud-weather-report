@@ -1,6 +1,6 @@
 apache-libcloud
 PyYAML==3.11
-bundletester
+bundletester>=0.12.0
 jujuclient>=0.53.0,<1.0.0
 Jinja2
 MarkupSafe
