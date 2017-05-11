@@ -189,7 +189,8 @@ class TestRunner(unittest.TestCase):
     def test_run_tests_with_args(self, bt_out, tester_main):
         args = run.parse_args(
             ['aws', 'test_plan', '--test-id', '1234', '--deploy-plan', 'foo',
-             '--deploy-budget', 'bar', '--testdir', '/tmp/testdir'])
+             '--deploy-budget', 'bar', '--testdir', '/tmp/testdir',
+             '--no-matrix'])
         runner = run.Runner('aws', False, args)
         env = mock.Mock(spec_set=['name', 'provider_name'])
         env.name = 'env-name'
@@ -219,6 +220,7 @@ class TestRunner(unittest.TestCase):
             juju_major_version=2,
             log_level='INFO',
             no_destroy=False,
+            no_matrix=True,
             output=str_io,
             regenerate_index=False,
             remove_test=None,
@@ -356,6 +358,7 @@ class TestRunner(unittest.TestCase):
             juju_major_version=2,
             log_level='INFO',
             no_destroy=False,
+            no_matrix=False,
             regenerate_index=False,
             remove_test=None,
             results_dir='results',
