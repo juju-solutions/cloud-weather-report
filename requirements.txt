@@ -1,5 +1,5 @@
 apache-libcloud
-PyYAML==3.11
+PyYAML==5.4
 bundletester>=0.12.0
 jujuclient>=0.53.0,<1.0.0
 Jinja2
